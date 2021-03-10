@@ -1,0 +1,36 @@
+plugins {
+    id "java"
+    id "java-library"
+    id "com.diffplug.spotless" version "5.8.2"
+}
+
+group "org.quiltmc"
+version "1.0.0"
+archivesBaseName = project.name
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnlyApi "org.jetbrains:annotations:20.1.0"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.0"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Target java 8
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8
+}
+
+spotless {
+    java {
+        // Use comma separator for openjdk like license headers
+        licenseHeaderFile(file("codeformat/HEADER")).yearSeparator(", ")
+    }
+}
