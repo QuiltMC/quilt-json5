@@ -19,13 +19,18 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }
 
+jar {
+    from ('.') {
+        include 'LICENSE'
+    }
+}
 test {
     useJUnitPlatform()
 }
 
 // Target java 8
 tasks.withType(JavaCompile).configureEach {
-    options.release = 8
+    options.release.set(8)
 }
 
 spotless {
