@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5;
-import static java.lang.Integer.parseInt;
+package org.quiltmc.json5.parser;
+
+import org.quiltmc.json5.api.JsonObjectVisitor;
+import org.quiltmc.json5.parser.wrapper.ArrayWrapper;
+import org.quiltmc.json5.parser.wrapper.ObjectWrapper;
+import org.quiltmc.json5.parser.wrapper.VisitorWrapper;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.logging.Logger;
+
+import static java.lang.Integer.parseInt;
 
 /**
  * JSON 5 parser.
@@ -40,7 +40,7 @@ final class Json5Parser {
 	private final StringBuilder buffer = new StringBuilder();
 	private String source;
 	private State parseState;
-	private Deque<Object> stack;
+	private Deque<VisitorWrapper> vList;
 	private int pos;
 	private int line;
 	private int column;
@@ -50,7 +50,7 @@ final class Json5Parser {
 	private int sign;
 	private Character c;
 	private String key;
-	private Object root;
+	private ObjectWrapper vRoot;
 
 	static String formatChar(char c) {
 		switch (c) {
@@ -99,23 +99,21 @@ final class Json5Parser {
 	 * @param text The document.
 	 * @return The new Object.
 	 */
-	public Object parse(String text) {
+	public void parseObject(String text, JsonObjectVisitor visitor) {
 		source = text;
 		parseState = State.START;
-		stack = new LinkedList<>();
+		vList = new LinkedList<>();
 		pos = 0;
 		line = 1;
 		column = 0;
 		token = null;
 		key = null;
-		root = null;
+		vRoot = (ObjectWrapper) VisitorWrapper.create(visitor);
 		do {
 			token = lex();
 
 			parseStates();
 		} while (token.getType() != TokenType.EOF);
-
-		return root;
 	}
 
 	private Token lex() {
@@ -926,16 +924,18 @@ final class Json5Parser {
 
 	private void push() {
 		Object value;
-
+		Type type;
 		switch (token.getType()) {
 			case PUNCTUATOR:
 				Object token = this.token.getValue();
 				switch ((Character) token) {
 					case '{':
+						type = Type.OBJECT;
 						value = new LinkedHashMap<String, Object>();
 						break;
 
 					case '[':
+						type = Type.ARRAY;
 						value = new ArrayList<>();
 						break;
 
@@ -944,53 +944,80 @@ final class Json5Parser {
 				}
 				break;
 			case NULL:
+				type = Type.NULL;
+				value = this.token.getValue();
+				break;
 			case BOOLEAN:
+				type = Type.BOOLEAN;
+				value = this.token.getValue();
+				break;
 			case NUMERIC:
+				type = Type.NUMBER;
+				value = this.token.getValue();
+				break;
 			case STRING:
+				type = Type.STRING;
 				value = this.token.getValue();
 				break;
 			default:
 				throw new InternalParserException();
 		}
 
-		if (root == null) {
-			root = value;
+		if (vList.isEmpty()) {
+			if (type != Type.OBJECT) {
+				throw new UnsupportedOperationException("Root type of JSON must be an object!");
+			}
+			vList.add(vRoot);
 		} else {
-			Object parent = stack.getLast();
-			if (parent instanceof List) {
-				((List<Object>) parent).add(value);
-			} else {
-				((Map<String, Object>) parent).put(key, value);
+			VisitorWrapper visitor = vList.getLast();
+			boolean object = visitor instanceof ObjectWrapper;
+			String key = object ? this.key : null;
+			switch (type) {
+				case NULL:
+					visitor.visitNull(key);
+					break;
+				case BOOLEAN:
+					visitor.visitBoolean(key, (Boolean) value);
+					break;
+				case NUMBER:
+					visitor.visitNumber(key, (Number) value);
+					break;
+				case STRING:
+					visitor.visitString(key, (String) value);
+					break;
+				case OBJECT:
+					vList.add(visitor.visitObject(key));
+					break;
+				case ARRAY:
+					vList.add(visitor.visitArray(key));
+					break;
 			}
 		}
 
-		if (value instanceof List || value instanceof Map) {
-			stack.add(value);
-			if (value instanceof List) {
+		if (type == Type.OBJECT || type == Type.ARRAY) {
+			if (type == Type.ARRAY) {
 				parseState = State.BEFORE_ARRAY_VALUE;
 			} else {
 				parseState = State.BEFORE_PROPERTY_NAME;
 			}
 		} else {
-			try {
-				Object current = stack.getLast();
-				if (current instanceof List) {
-					parseState = State.AFTER_ARRAY_VALUE;
-				} else {
-					parseState = State.AFTER_PROPERTY_VALUE;
-				}
-			} catch (NoSuchElementException e) {
+			VisitorWrapper current = vList.peekLast();
+			if (current == null) {
 				parseState = State.END;
+			} else if (current instanceof ArrayWrapper) {
+				parseState = State.AFTER_ARRAY_VALUE;
+			} else {
+				parseState = State.AFTER_PROPERTY_VALUE;
 			}
 		}
+
 	}
 
 	private void pop() {
-		stack.removeLast();
-
+		vList.removeLast();
 		try {
-			Object current = stack.getLast();
-			if (current instanceof List) {
+			VisitorWrapper current = vList.getLast();
+			if (current instanceof ArrayWrapper) {
 				parseState = State.AFTER_ARRAY_VALUE;
 			} else {
 				parseState = State.AFTER_PROPERTY_VALUE;
@@ -1078,5 +1105,14 @@ final class Json5Parser {
 		public Object getValue() {
 			return value;
 		}
+	}
+
+	private enum Type {
+		NULL,
+		BOOLEAN,
+		NUMBER,
+		STRING,
+		OBJECT,
+		ARRAY
 	}
 }

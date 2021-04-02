@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5;
+package org.quiltmc.json5.parser;
 
 /**
  * You may find the original code here: https://github.com/jimblackler/usejson
  */
-public class InvalidSyntaxException extends RuntimeException {
-	public InvalidSyntaxException(Throwable cause) {
-		super(cause);
-	}
+public class InternalParserException extends RuntimeException {
+	public InternalParserException() {}
 
-	public InvalidSyntaxException(String message) {
+	public InternalParserException(String message) {
 		super(message);
 	}
 }

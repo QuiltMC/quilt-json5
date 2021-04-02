@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5;
+package org.quiltmc.json5.parser;
 
-public class ReadException extends RuntimeException {
-	public ReadException(Throwable cause) {
+/**
+ * You may find the original code here: https://github.com/jimblackler/usejson
+ */
+public class InvalidSyntaxException extends RuntimeException {
+	public InvalidSyntaxException(Throwable cause) {
 		super(cause);
 	}
 
-	public ReadException(String message) {
+	public InvalidSyntaxException(String message) {
 		super(message);
 	}
 }

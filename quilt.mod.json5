@@ -1,0 +1,52 @@
+{
+  schema_version: 1,
+  quilt_loader: {
+    group_id: "org.quiltmc",
+    mod_id: "example_mod",
+    version: "1.0.0",
+    entrypoints: {
+      main: [
+        "org.quiltmc.example_mod.impl.ExampleMod",
+        "org.quiltmc.example_mod.impl.ExampleModNetworking"
+      ],
+      // Since we only have a single client endpoint, no array is needed.
+      client: "org.quiltmc.example_mod.impl.client.ExampleModClient",
+    },
+    depends: {
+      "quilt_networking_api": "*",
+      "quilt_rendering_api": "*"
+    },
+    breaks: {
+      sodium: {
+        versions: "*",
+        reason: "Sodium does not implement the Quilt Rendering API."
+      },
+      some_random_library: [
+        "1.23.456", // A reason is not required
+        {
+          versions: "<1.0.0",
+          reason: "Stable API required"
+        },
+        {
+          versions: "1.5.3",
+          reason: "Contains a game-breaking bug"
+        }
+      ]
+    },
+    metadata: {
+      name: "Quilt Example Mod",
+      description: "An example mod for the Quilt ecosystem.",
+      contributors: {
+        "Haven King": "Developer"
+      },
+      contact: {
+        homepage: "https://quiltmc.org/"
+      },
+      license: "CC0-1.0",
+      icon: "assets/modid/icon.png"
+    }
+  },
+  mixins: [
+    "modid.mixins.json"
+  ]
+}
