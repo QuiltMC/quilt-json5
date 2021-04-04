@@ -1,4 +1,4 @@
-package org.quiltmc.json5.parser.wrapper;
+package org.quiltmc.json5.impl.wrapper;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;

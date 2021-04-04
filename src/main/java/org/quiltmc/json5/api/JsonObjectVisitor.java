@@ -20,7 +20,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 
-public interface JsonObjectVisitor {
+public interface JsonObjectVisitor extends JsonVisitor {
+	@Override
+	default JsonObjectVisitor rootObject() {
+		return this;
+	}
+
 	/**
 	 * Begins reading a json object. The first object is implicit.
 	 */
@@ -30,8 +35,4 @@ public interface JsonObjectVisitor {
 	void visitBoolean(String name, boolean value);
 	void visitNumber(String name, Number value);
 	void visitNull(String name);
-
-	static void readJson5(Path path, JsonObjectVisitor visitor) {
-		throw new AssertionError("Not implemented!");
-	}
 }

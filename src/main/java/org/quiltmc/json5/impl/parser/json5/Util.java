@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.parser;
+package org.quiltmc.json5.impl.parser.json5;
 /**
  * Based on https://github.com/json5/json5/blob/master/lib/util.js
  * You may find the original code here: https://github.com/jimblackler/usejson

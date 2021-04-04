@@ -14,31 +14,15 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.parser;
-
-import java.math.BigInteger;
+package org.quiltmc.json5.api.exception;
 
 /**
  * You may find the original code here: https://github.com/jimblackler/usejson
  */
-final class NumberUtils {
-	public static Object toBestObject(BigInteger bigInteger) {
-		try {
-			return bigInteger.byteValueExact();
-		} catch (ArithmeticException ignored) {
-		}
-		try {
-			return bigInteger.shortValueExact();
-		} catch (ArithmeticException ignored) {
-		}
-		try {
-			return bigInteger.intValueExact();
-		} catch (ArithmeticException ignored) {
-		}
-		try {
-			return bigInteger.longValueExact();
-		} catch (ArithmeticException ignored) {
-		}
-		return bigInteger;
+public class InternalParserException extends ParseException {
+	public InternalParserException() {}
+
+	public InternalParserException(String message) {
+		super(message);
 	}
 }

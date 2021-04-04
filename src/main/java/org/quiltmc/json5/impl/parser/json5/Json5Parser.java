@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.parser;
+package org.quiltmc.json5.impl.parser.json5;
 
-import org.quiltmc.json5.api.JsonObjectVisitor;
-import org.quiltmc.json5.parser.wrapper.ArrayWrapper;
-import org.quiltmc.json5.parser.wrapper.ObjectWrapper;
-import org.quiltmc.json5.parser.wrapper.VisitorWrapper;
+import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.json5.api.JsonVisitor;
+import org.quiltmc.json5.api.exception.InternalParserException;
+import org.quiltmc.json5.api.exception.InvalidSyntaxException;
+import org.quiltmc.json5.impl.wrapper.ArrayWrapper;
+import org.quiltmc.json5.impl.wrapper.ObjectWrapper;
+import org.quiltmc.json5.impl.wrapper.VisitorWrapper;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -32,25 +35,41 @@ import static java.lang.Integer.parseInt;
  * JSON 5 parser.
  * Based on https://github.com/json5/json5/blob/master/lib/parse.js
  * You may find the original code here: https://github.com/jimblackler/usejson
- * It has been modified to be fitted under the JsonReader API.
+ * It has been modified to be fitted under the JsonVisitor
  */
-final class Json5Parser {
+@ApiStatus.Internal
+public final class Json5Parser {
 	private static final Logger LOG = Logger.getLogger(Json5Parser.class.getName());
 
 	private final StringBuilder buffer = new StringBuilder();
-	private String source;
-	private State parseState;
-	private Deque<VisitorWrapper> vList;
-	private int pos;
-	private int line;
-	private int column;
-	private Token token;
-	private State lexState;
+	private final String source;
+	private final JsonVisitor vRoot;
+	boolean initializedRoot = false;
+	private State parseState = State.START;
+	private final Deque<VisitorWrapper> vList = new LinkedList<>();
+	private int pos = 0;
+	private int line = 1;
+	private int column = 0;
+	private Token token = null;
+	private State lexState = null;
 	private boolean doubleQuote;
 	private int sign;
 	private Character c;
 	private String key;
-	private ObjectWrapper vRoot;
+
+
+	public Json5Parser(String text, JsonVisitor visitor) {
+		this.source = text;
+		this.vRoot = visitor;
+	}
+
+	public void parse() {
+		do {
+			token = lex();
+
+			parseStates();
+		} while (token.getType() != TokenType.EOF);
+	}
 
 	static String formatChar(char c) {
 		switch (c) {
@@ -86,34 +105,6 @@ final class Json5Parser {
 		}
 
 		return String.valueOf(c);
-	}
-
-	/**
-	 * Converts the text of a JSON5 document to an Object, which could be:
-	 * - null.
-	 * - Boolean.
-	 * - String.
-	 * - Number of a sub-type of a Number.
-	 * - Map<String, Object> representing a dictionary (child values fitting the same pattern).
-	 * - List<> representing an array (child values fitting the same pattern).
-	 * @param text The document.
-	 * @return The new Object.
-	 */
-	public void parseObject(String text, JsonObjectVisitor visitor) {
-		source = text;
-		parseState = State.START;
-		vList = new LinkedList<>();
-		pos = 0;
-		line = 1;
-		column = 0;
-		token = null;
-		key = null;
-		vRoot = (ObjectWrapper) VisitorWrapper.create(visitor);
-		do {
-			token = lex();
-
-			parseStates();
-		} while (token.getType() != TokenType.EOF);
 	}
 
 	private Token lex() {
@@ -210,11 +201,10 @@ final class Json5Parser {
 				if (c == null) {
 					throw invalidChar(read());
 				}
-				switch (c) {
-					case '*':
-						read();
-						lexState = State.MULTI_LINE_COMMENT_ASTERISK;
-						return null;
+				if (c == '*') {
+					read();
+					lexState = State.MULTI_LINE_COMMENT_ASTERISK;
+					return null;
 				}
 				read();
 				return null;
@@ -466,8 +456,7 @@ final class Json5Parser {
 							return null;
 					}
 				}
-
-				return new Token(TokenType.NUMERIC, sign * 0);
+				return new Token(TokenType.NUMERIC, new BigDecimal(0d * sign));
 			case DECIMAL_INTEGER:
 				if (c != null) {
 					switch (c) {
@@ -488,8 +477,7 @@ final class Json5Parser {
 					}
 				}
 				return new Token(TokenType.NUMERIC,
-						NumberUtils.toBestObject(
-								new BigInteger(buffer.toString()).multiply(BigInteger.valueOf(sign))));
+						new BigInteger(buffer.toString()).multiply(BigInteger.valueOf(sign)));
 
 			case DECIMAL_POINT_LEADING:
 				if (c != null) {
@@ -515,9 +503,17 @@ final class Json5Parser {
 					lexState = State.DECIMAL_FRACTION;
 					return null;
 				}
+				String toParse = buffer.toString();
+				if (toParse.endsWith(".")) {
+					toParse = toParse.substring(0, toParse.length() - 1);
+				}
+				// BigDecimal doesn't handle negative 0 properly so we have to special-case that
+				if (toParse.equals("0")) {
+					return new Token(TokenType.NUMERIC, 0d * sign);
+				}
 				return new Token(TokenType.NUMERIC,
-						NumberUtils.toBestObject(
-								new BigInteger(buffer.toString()).multiply(BigInteger.valueOf(sign))));
+						new BigDecimal(toParse).multiply(BigDecimal.valueOf(sign)));
+
 
 			case DECIMAL_FRACTION:
 				if (c != null) {
@@ -587,7 +583,7 @@ final class Json5Parser {
 						return null;
 					}
 				}
-				return new Token(TokenType.NUMERIC, sign * parseInt(buffer.substring(2), 16));
+				return new Token(TokenType.NUMERIC, new BigInteger(buffer.substring(2), 16).multiply(BigInteger.valueOf(sign)));
 
 			case STRING:
 				if (c == null) {
@@ -923,20 +919,20 @@ final class Json5Parser {
 	}
 
 	private void push() {
-		Object value;
 		Type type;
+		Object value;
 		switch (token.getType()) {
 			case PUNCTUATOR:
 				Object token = this.token.getValue();
 				switch ((Character) token) {
 					case '{':
 						type = Type.OBJECT;
-						value = new LinkedHashMap<String, Object>();
+						value = null;
 						break;
 
 					case '[':
+						value = null;
 						type = Type.ARRAY;
-						value = new ArrayList<>();
 						break;
 
 					default:
@@ -964,10 +960,30 @@ final class Json5Parser {
 		}
 
 		if (vList.isEmpty()) {
-			if (type != Type.OBJECT) {
-				throw new UnsupportedOperationException("Root type of JSON must be an object!");
+			if (initializedRoot) {
+				throw new InternalParserException("There are somehow two roots? Something is very wrong!");
 			}
-			vList.add(vRoot);
+			switch (type) {
+				case NULL:
+					vRoot.rootNull();
+					break;
+				case BOOLEAN:
+					vRoot.rootBoolean((Boolean) value);
+					break;
+				case NUMBER:
+					vRoot.rootNumber((Number) value);
+					break;
+				case STRING:
+					vRoot.rootString((String) value);
+					break;
+				case OBJECT:
+					vList.add(VisitorWrapper.create(vRoot.rootObject()));
+					break;
+				case ARRAY:
+					vList.add(VisitorWrapper.create(vRoot.rootArray()));
+					break;
+			}
+			initializedRoot = true;
 		} else {
 			VisitorWrapper visitor = vList.getLast();
 			boolean object = visitor instanceof ObjectWrapper;

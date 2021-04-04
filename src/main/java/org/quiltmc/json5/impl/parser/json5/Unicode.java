@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.parser;
+package org.quiltmc.json5.impl.parser.json5;
 
 import java.util.regex.Pattern;
 

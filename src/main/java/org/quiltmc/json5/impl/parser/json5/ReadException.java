@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.parser;
+package org.quiltmc.json5.impl.parser.json5;
 
-/**
- * You may find the original code here: https://github.com/jimblackler/usejson
- */
-public class InternalParserException extends RuntimeException {
-	public InternalParserException() {}
+public class ReadException extends RuntimeException {
+	public ReadException(Throwable cause) {
+		super(cause);
+	}
 
-	public InternalParserException(String message) {
+	public ReadException(String message) {
 		super(message);
 	}
 }
