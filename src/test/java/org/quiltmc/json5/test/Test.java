@@ -1,6 +1,24 @@
+/*
+ * Copyright 2021 QuiltMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.quiltmc.json5.test;
 
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 import org.quiltmc.json5.api.JsonApi;
 import org.quiltmc.json5.api.JsonArrayVisitor;
 import org.quiltmc.json5.api.JsonObjectVisitor;
@@ -8,18 +26,20 @@ import org.quiltmc.json5.api.JsonVisitor;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 
-public class Test {
-	public static void main(String[] args) throws IOException {
+class Test {
+	@TestFactory
+	Stream<DynamicTest> testOfficialSuite() throws IOException {
 		Path tests = Paths.get("json5-tests");
-		Files.walkFileTree(tests, new SimpleFileVisitor<Path>() {
-			@Override
-			public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-				if (path.toString().contains(".git")) {
-					return super.visitFile(path, basicFileAttributes);
-				}
+		return Files.walk(tests).filter(path -> {
+			String str = path.toString();
+			return !str.startsWith("json5-tests/.") && (str.endsWith(".json") || str.endsWith(".json5") || str.endsWith(".js") || str.endsWith(".txt"));
+		}).map(path ->
+			DynamicTest.dynamicTest(path.toString(), () -> {
 				if (Files.isDirectory(path)) {
 					System.out.print(path);
 				}
@@ -28,7 +48,7 @@ public class Test {
 						System.out.println(path.toString());
 						JsonApi.visit(new String(Files.readAllBytes(path)), new BasicVisitor());
 						System.out.println("PASSED as expected");
-						return super.visitFile(path, basicFileAttributes);
+						return;
 					}
 				} catch (Exception ex) {
 					throw new RuntimeException("org.quiltmc.json5.test.Test " + path.getFileName() + " failed!", ex);
@@ -46,17 +66,14 @@ public class Test {
 					throw new UncheckedIOException(e);
 				} catch (Exception ex) {
 					System.out.println("FAILED as expected");
-					return super.visitFile(path, basicFileAttributes);
 				}
-				return super.visitFile(path, basicFileAttributes);
-			}
-		});
+			})
+		);
 	}
 }
 
 
 class BasicVisitor implements JsonVisitor {
-
 	@Override
 	public JsonObjectVisitor rootObject() {
 		System.out.println("\tobject");

@@ -18,8 +18,6 @@ package org.quiltmc.json5.api;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
-
 public interface JsonObjectVisitor extends JsonVisitor {
 	@Override
 	default JsonObjectVisitor rootObject() {
