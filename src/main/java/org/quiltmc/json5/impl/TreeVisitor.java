@@ -42,7 +42,7 @@ public final class TreeVisitor implements JsonVisitor {
 
 	@Override
 	public void rootNull() {
-		root = null;
+		root = JsonNull.INSTANCE;
 	}
 
 	private static final class ObjVisitor implements JsonObjectVisitor {
