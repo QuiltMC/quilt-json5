@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api;
+package org.quiltmc.json5.api.visitor;
 
 import org.jetbrains.annotations.NotNull;
 

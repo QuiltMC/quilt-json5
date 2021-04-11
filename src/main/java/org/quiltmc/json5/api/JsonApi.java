@@ -17,10 +17,18 @@
 package org.quiltmc.json5.api;
 
 import org.quiltmc.json5.api.exception.ParseException;
-import org.quiltmc.json5.impl.TreeVisitor;
+import org.quiltmc.json5.api.stream.JsonStreamReader;
+import org.quiltmc.json5.api.stream.JsonStreamWriter;
+import org.quiltmc.json5.api.visitor.JsonVisitor;
+import org.quiltmc.json5.api.visitor.JsonWriter;
+import org.quiltmc.json5.impl.stream.JsonStreamReaderImpl;
+import org.quiltmc.json5.impl.stream.JsonStreamWriterImpl;
+import org.quiltmc.json5.impl.visitor.JsonWriterImpl;
+import org.quiltmc.json5.impl.visitor.TreeVisitor;
 import org.quiltmc.json5.impl.parser.json5.Json5Parser;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -29,6 +37,7 @@ public final class JsonApi {
 	 * Parses a JSON5 file into a tree of its values.
 	 * @return A {@link String}, {@link Boolean}, {@link Number}, {@link JsonNull},
 	 * or a {@link java.util.LinkedHashMap}&lt;String, Object&gt; or {@link java.util.List}&lt;Object&gt; containing any of these types.
+	 * @throws ParseException if the file is unable to be read or parsed
 	 */
 	public static Object parseToTree(Path path) {
 		try {
@@ -42,6 +51,7 @@ public final class JsonApi {
 	 * Parses JSON5 text into a tree of its values.
 	 * @return A {@link String}, {@link Boolean}, {@link Number}, {@link JsonNull},
 	 * or a {@link java.util.LinkedHashMap}&lt;String, Object&gt; or {@link java.util.List}&lt;Object&gt; containing any of these types.
+	 * @throws ParseException if the text is unable to be parsed
 	 */
 	public static Object parseToTree(String text) {
 		TreeVisitor visitor = new TreeVisitor();
@@ -67,5 +77,31 @@ public final class JsonApi {
 	 */
 	public static void visit(String text, JsonVisitor visitor) {
 		new Json5Parser(text, visitor).parse();
+	}
+
+
+	public static JsonStreamReader streamReader(Path path) throws IOException {
+		return new JsonStreamReaderImpl(parseToTree(path));
+	}
+
+	public static JsonStreamReader streamReader(String text) throws IOException {
+		return new JsonStreamReaderImpl(parseToTree(text));
+	}
+
+	public static JsonWriter writer(Path path) throws IOException {
+		return new JsonWriterImpl(streamWriter(path));
+	}
+
+	public static JsonWriter writer(Writer writer) throws IOException {
+		return new JsonWriterImpl(streamWriter(writer));
+	}
+
+	// we don't wrap the IOException because JsonWriter already is covered in throws
+	public static JsonStreamWriter streamWriter(Path path) throws IOException {
+		return streamWriter(Files.newBufferedWriter(path));
+	}
+
+	public static JsonStreamWriter streamWriter(Writer writer) throws IOException {
+		return new JsonStreamWriterImpl(writer);
 	}
 }

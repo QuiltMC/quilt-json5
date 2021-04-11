@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.impl;
+package org.quiltmc.json5.impl.visitor;
 
 import org.jetbrains.annotations.NotNull;
-import org.quiltmc.json5.api.JsonArrayVisitor;
+import org.quiltmc.json5.api.visitor.JsonArrayVisitor;
 import org.quiltmc.json5.api.JsonNull;
-import org.quiltmc.json5.api.JsonObjectVisitor;
-import org.quiltmc.json5.api.JsonVisitor;
+import org.quiltmc.json5.api.visitor.JsonObjectVisitor;
+import org.quiltmc.json5.api.visitor.JsonVisitor;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

@@ -17,13 +17,15 @@
 package org.quiltmc.json5.impl.parser.json5;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.json5.api.JsonVisitor;
+import org.quiltmc.json5.api.visitor.JsonVisitor;
 import org.quiltmc.json5.api.exception.InternalParserException;
 import org.quiltmc.json5.api.exception.InvalidSyntaxException;
 import org.quiltmc.json5.impl.wrapper.ArrayWrapper;
 import org.quiltmc.json5.impl.wrapper.ObjectWrapper;
 import org.quiltmc.json5.impl.wrapper.VisitorWrapper;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
@@ -1031,6 +1033,7 @@ public final class Json5Parser {
 
 	private void pop() {
 		vList.removeLast();
+
 		try {
 			VisitorWrapper current = vList.getLast();
 			if (current instanceof ArrayWrapper) {

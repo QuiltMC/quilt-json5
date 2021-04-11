@@ -19,9 +19,10 @@ package org.quiltmc.json5.impl.wrapper;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.api.JsonArrayVisitor;
-import org.quiltmc.json5.api.JsonObjectVisitor;
-import org.quiltmc.json5.api.JsonVisitor;
+import org.quiltmc.json5.api.visitor.JsonArrayVisitor;
+import org.quiltmc.json5.api.visitor.JsonObjectVisitor;
+import org.quiltmc.json5.api.visitor.JsonVisitor;
+
 
 @ApiStatus.Internal
 public interface VisitorWrapper {

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api;
+package org.quiltmc.json5.api.visitor;
 
 import org.quiltmc.json5.api.exception.FormatViolationException;
+
+import java.io.Closeable;
+import java.io.IOException;
 
 public interface JsonVisitor {
 	default JsonObjectVisitor rootObject() {
