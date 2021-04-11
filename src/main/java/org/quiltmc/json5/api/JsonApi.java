@@ -96,6 +96,10 @@ public final class JsonApi {
 		return new JsonWriterImpl(streamWriter(writer));
 	}
 
+	public static JsonWriter writer(JsonStreamWriter writer) throws IOException {
+		return new JsonWriterImpl(writer);
+	}
+
 	// we don't wrap the IOException because JsonWriter already is covered in throws
 	public static JsonStreamWriter streamWriter(Path path) throws IOException {
 		return streamWriter(Files.newBufferedWriter(path));
