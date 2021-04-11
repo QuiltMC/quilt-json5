@@ -16,6 +16,7 @@
 
 package org.quiltmc.json5.api.visitor;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -24,6 +25,7 @@ import java.io.IOException;
 
 // Technically, the writing visitors could extend the normal JsonVisitors, but making them different makes the implementation and usage
 // of the API much nicer.
+@ApiStatus.NonExtendable
 public interface JsonWriter extends Flushable, Closeable {
 	JsonWriter comment(String comment) throws IOException;
 	JsonWriter blockComment(String comment) throws IOException;

@@ -16,6 +16,7 @@
 
 package org.quiltmc.json5.impl.visitor;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.json5.api.visitor.JsonArrayVisitor;
 import org.quiltmc.json5.api.JsonNull;
@@ -27,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
+@ApiStatus.Internal
 public final class TreeVisitor implements JsonVisitor {
 	public Object root;
 	@Override

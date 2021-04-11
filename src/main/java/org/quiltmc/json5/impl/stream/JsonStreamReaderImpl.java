@@ -16,6 +16,7 @@
 
 package org.quiltmc.json5.impl.stream;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.json5.api.JsonNull;
 import org.quiltmc.json5.api.JsonToken;
 import org.quiltmc.json5.api.exception.FormatViolationException;
@@ -23,6 +24,7 @@ import org.quiltmc.json5.api.stream.JsonStreamReader;
 
 import java.util.*;
 
+@ApiStatus.Internal
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class JsonStreamReaderImpl implements JsonStreamReader {
 	private final Queue<Value> values = new LinkedList<>();

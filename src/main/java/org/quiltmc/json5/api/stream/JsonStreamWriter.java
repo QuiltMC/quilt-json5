@@ -16,6 +16,7 @@
 
 package org.quiltmc.json5.api.stream;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Flushable;
@@ -28,6 +29,7 @@ import java.io.IOException;
  * You may view the original, including its license header, here:
  * https://github.com/google/gson/blob/530cb7447089ccc12dc2009c17f468ddf2cd61ca/gson/src/main/java/com/google/gson/stream/JsonWriter.java
  */
+@ApiStatus.NonExtendable
 public interface JsonStreamWriter extends AutoCloseable, Flushable {
 	/**
 	 * Sets the indentation string to be repeated for each level of indentation

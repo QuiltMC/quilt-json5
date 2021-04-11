@@ -16,6 +16,7 @@
 
 package org.quiltmc.json5.api.stream;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.json5.api.JsonToken;
 
 /*
@@ -26,6 +27,7 @@ import org.quiltmc.json5.api.JsonToken;
  * https://github.com/google/gson/blob/530cb7447089ccc12dc2009c17f468ddf2cd61ca/gson/src/main/java/com/google/gson/stream/JsonReader.java
  */
 // TODO: document
+@ApiStatus.NonExtendable
 public interface JsonStreamReader extends AutoCloseable {
 	// we don't have lenient
 	void beginArray();
@@ -43,5 +45,5 @@ public interface JsonStreamReader extends AutoCloseable {
 	int nextInt();
 	void close();
 	void skipValue();
-	//String getPath(); // this is a pain to implement, will do it if anybody asks
+	//String getPath(); // this is a pain to implement, would be the same amount of effort to just make a proper reader impl
 }
