@@ -19,8 +19,8 @@ package org.quiltmc.json5.impl.visitor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.api.stream.JsonStreamWriter;
-import org.quiltmc.json5.api.visitor.JsonArrayWriter;
-import org.quiltmc.json5.api.visitor.JsonObjectWriter;
+import org.quiltmc.json5.api.visitor.writer.JsonArrayWriter;
+import org.quiltmc.json5.api.visitor.writer.JsonObjectWriter;
 
 import java.io.IOException;
 

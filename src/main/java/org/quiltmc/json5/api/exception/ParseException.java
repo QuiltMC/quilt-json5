@@ -16,6 +16,9 @@
 
 package org.quiltmc.json5.api.exception;
 
+/**
+ * A generic exception relating to an error in parsing, from loading the text to be read to emitting it's final representation.
+ */
 public class ParseException extends RuntimeException {
 	public ParseException() {
 	}

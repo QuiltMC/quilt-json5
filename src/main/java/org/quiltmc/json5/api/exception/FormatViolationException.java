@@ -16,7 +16,7 @@
 
 package org.quiltmc.json5.api.exception;
 
-public class FormatViolationException extends IllegalStateException {
+public class FormatViolationException extends ParseException {
 	public FormatViolationException() {
 	}
 

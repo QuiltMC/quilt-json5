@@ -17,12 +17,14 @@
 package org.quiltmc.json5.api.exception;
 
 /**
- * You may find the original code here: https://github.com/jimblackler/usejson
+ * An exception to be thrown by a parser when the syntax of a file is invalid.
  */
-public class InternalParserException extends ParseException {
-	public InternalParserException() {}
+public class MalformedSyntaxException extends ParseException {
+	public MalformedSyntaxException(Throwable cause) {
+		super(cause);
+	}
 
-	public InternalParserException(String message) {
+	public MalformedSyntaxException(String message) {
 		super(message);
 	}
 }

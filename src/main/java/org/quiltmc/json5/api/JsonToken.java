@@ -28,7 +28,6 @@ import org.quiltmc.json5.api.stream.JsonStreamWriter;
  * A structure, name or value type in a JSON-encoded string.
  *
  * @author Jesse Wilson
- * @since 1.6
  */
 public enum JsonToken {
 

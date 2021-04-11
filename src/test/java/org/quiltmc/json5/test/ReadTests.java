@@ -21,58 +21,63 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.quiltmc.json5.api.JsonApi;
+import org.quiltmc.json5.api.stream.JsonStreamReader;
 import org.quiltmc.json5.api.visitor.JsonArrayVisitor;
 import org.quiltmc.json5.api.visitor.JsonObjectVisitor;
 import org.quiltmc.json5.api.visitor.JsonVisitor;
-import org.quiltmc.json5.api.visitor.JsonWriter;
+import org.quiltmc.json5.api.visitor.writer.JsonWriter;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 class ReadTests {
 	@TestFactory
-	Stream<DynamicTest> testOfficialSuite() throws IOException {
-		Path tests = Paths.get("json5-tests");
-		return Files.walk(tests).filter(path -> {
+	Stream<DynamicTest> validJson5() throws IOException {
+		return Files.walk(Paths.get("tests")).filter(path -> {
 			String str = path.toString();
-			return !str.startsWith("json5-tests/.") && (str.endsWith(".json") || str.endsWith(".json5") || str.endsWith(".js") || str.endsWith(".txt"));
+			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && (str.endsWith(".json") || str.endsWith(".json5"));
+		}).map(path -> DynamicTest.dynamicTest("Valid JSON5: " + path, () -> JsonApi.visit(path, new BasicVisitor())));
+	}
+
+	@TestFactory
+	Stream<DynamicTest> json5IsInvalidJson() throws IOException {
+		return Files.walk(Paths.get("tests")).filter(path -> {
+			String str = path.toString();
+			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && str.endsWith(".json5");
 		}).map(path ->
-			DynamicTest.dynamicTest(path.toString(), () -> {
-				if (Files.isDirectory(path)) {
-					System.out.print(path);
-				}
+			DynamicTest.dynamicTest("Strict: " + path, () -> {
+				JsonStreamReader reader = JsonApi.streamReader(path);
+				reader.setStrictJson();
 				try {
-					if (path.toString().endsWith(".json") || path.toString().endsWith(".json5")) {
-						System.out.println(path.toString());
-						JsonApi.visit(new String(Files.readAllBytes(path)), new BasicVisitor());
-						System.out.println("PASSED as expected");
-						return;
-					}
-				} catch (Exception ex) {
-					throw new RuntimeException("org.quiltmc.json5.test.Test " + path.getFileName() + " failed!", ex);
+					JsonApi.visit(reader, new BasicVisitor());
+				} catch (Throwable t) {
+					//TODO: make sure it's not a reading the file wrong error?
+					return;
 				}
-
-				try {
-					if (path.toString().endsWith(".js") || path.toString().endsWith(".txt")) {
-						System.out.println(path.toString());
-						JsonApi.visit(new String(Files.readAllBytes(path)), new BasicVisitor());
-						throw new RuntimeException("org.quiltmc.json5.test.Test " + path.getFileName() + " failed! It should have not parsed correctly, but it did!");
-					}
-
-
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				} catch (Exception ex) {
-					System.out.println("FAILED as expected");
-				}
+				throw new RuntimeException("Invalid JSON successfully parsed as strict json?");
 			})
 		);
 	}
+
+	@TestFactory
+	Stream<DynamicTest> invalidJson5() throws IOException {
+		return Files.walk(Paths.get("tests")).filter(path -> {
+			String str = path.toString();
+			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && (str.endsWith(".js") || str.endsWith(".txt"));
+		}).map(path ->
+				DynamicTest.dynamicTest("Strict: " + path, () -> {
+					try {
+						JsonApi.visit(path, new BasicVisitor());
+					} catch (Throwable t) {
+						//TODO: make sure it's not a reading the file wrong error?
+					}
+				})
+		);
+	}
+
 	class BasicVisitor implements JsonVisitor {
 		@Override
 		public JsonObjectVisitor rootObject() {
@@ -194,32 +199,5 @@ class ReadTests {
 		public void visitNull() {
 			System.out.println(tabs + "null");
 		}
-	}
-}
-
-class WriteTests {
-	@Test()
-	void write() throws IOException {
-		StringWriter w = new StringWriter();
-		JsonWriter writer = JsonApi.writer(w);
-		writer.comment("Top comment\nLook mom, multiple lines from one string\nin the input!")
-		.comment("This one, however, was a different call to comment().")
-		.writeObject()
-			.comment("If strict mode was off this would be \"value\" instead.")
-				.writeArray("value", "Isn't this pretty printing nice!")
-					.comment("This is the maximum value of a signed long")
-					.write(Long.MAX_VALUE, "(Long.MAX_VALUE in java)")
-					.write(Double.NaN, "NaN is only allowed when strict mode is off")
-					.write("a string\nwith multiline", "Strings are sanitized how you would expect.")
-					.comment("But unfortunately our array journey has come  to a close :(")
-				.pop()
-			.comment("Surprise! Another value approaches!")
-			.write("another_value", "chicken nuggets" )
-			.comment("Wow this sure is a lot of comments huh")
-		.pop()
-		.comment("Glad that's over.");
-		writer.flush();
-		writer.close();
-		System.out.println(w);
 	}
 }

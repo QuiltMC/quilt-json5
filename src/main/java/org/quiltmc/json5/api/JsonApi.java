@@ -20,14 +20,15 @@ import org.quiltmc.json5.api.exception.ParseException;
 import org.quiltmc.json5.api.stream.JsonStreamReader;
 import org.quiltmc.json5.api.stream.JsonStreamWriter;
 import org.quiltmc.json5.api.visitor.JsonVisitor;
-import org.quiltmc.json5.api.visitor.JsonWriter;
+import org.quiltmc.json5.api.visitor.writer.JsonWriter;
 import org.quiltmc.json5.impl.stream.JsonStreamReaderImpl;
 import org.quiltmc.json5.impl.stream.JsonStreamWriterImpl;
 import org.quiltmc.json5.impl.visitor.JsonWriterImpl;
+import org.quiltmc.json5.impl.visitor.ReaderToVisitorAdapter;
 import org.quiltmc.json5.impl.visitor.TreeVisitor;
-import org.quiltmc.json5.impl.parser.json5.Json5Parser;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,21 +54,28 @@ public final class JsonApi {
 	 * or a {@link java.util.LinkedHashMap}&lt;String, Object&gt; or {@link java.util.List}&lt;Object&gt; containing any of these types.
 	 * @throws ParseException if the text is unable to be parsed
 	 */
-	public static Object parseToTree(String text) {
+	public static Object parseToTree(String text) throws IOException {
 		TreeVisitor visitor = new TreeVisitor();
 		visit(text, visitor);
 		return visitor.root;
 	}
 
+	public static Object parseToTree(JsonStreamReader reader) throws IOException {
+		TreeVisitor visitor = new TreeVisitor();
+		visit(reader, visitor);
+		return visitor.root;
+	}
 	/**
 	 * @throws ParseException if the path could not be read or parsed
 	 * @throws org.quiltmc.json5.api.exception.FormatViolationException if the text does not follow the format expected by the visitor.
 	 */
 	public static void visit(Path path, JsonVisitor visitor) {
 		try {
-			visit(new String(Files.readAllBytes(path)), visitor);
-		} catch (IOException ex) {
-			throw new ParseException("Unable to read file: ", ex);
+			JsonStreamReaderImpl reader = new JsonStreamReaderImpl(Files.newBufferedReader(path));
+			ReaderToVisitorAdapter.visit(reader, visitor);
+			reader.close();
+		} catch (IOException e) {
+			throw new ParseException(e);
 		}
 	}
 
@@ -76,16 +84,27 @@ public final class JsonApi {
 	 * @throws org.quiltmc.json5.api.exception.FormatViolationException if the text does not follow the format expected by the visitor.
 	 */
 	public static void visit(String text, JsonVisitor visitor) {
-		new Json5Parser(text, visitor).parse();
+		try {
+			JsonStreamReaderImpl reader = new JsonStreamReaderImpl(new StringReader(text));
+			ReaderToVisitorAdapter.visit(reader, visitor);
+			reader.close();
+		} catch (IOException e) {
+			throw new ParseException(e);
+		}
 	}
 
+	public static void visit(JsonStreamReader reader, JsonVisitor visitor) throws IOException {
+		ReaderToVisitorAdapter.visit(reader, visitor);
+		reader.close();
+	}
 
 	public static JsonStreamReader streamReader(Path path) throws IOException {
-		return new JsonStreamReaderImpl(parseToTree(path));
+		return new JsonStreamReaderImpl(Files.newBufferedReader(path));
 	}
 
 	public static JsonStreamReader streamReader(String text) throws IOException {
-		return new JsonStreamReaderImpl(parseToTree(text));
+		//return new JsonStreamReaderImpl(parseToTree(text));
+		throw new IOException("ex");
 	}
 
 	public static JsonWriter writer(Path path) throws IOException {
