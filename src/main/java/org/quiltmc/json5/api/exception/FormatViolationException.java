@@ -16,19 +16,38 @@
 
 package org.quiltmc.json5.api.exception;
 
+import org.quiltmc.json5.api.stream.JsonStreamReader;
+
 public class FormatViolationException extends ParseException {
 	public FormatViolationException() {
+		super();
 	}
 
 	public FormatViolationException(String message) {
 		super(message);
 	}
 
+	public FormatViolationException(Throwable cause) {
+		super(cause);
+	}
+
 	public FormatViolationException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
-	public FormatViolationException(Throwable cause) {
-		super(cause);
+	public FormatViolationException(JsonStreamReader reader) {
+		super(reader, "Format violation");
+	}
+
+	public FormatViolationException(JsonStreamReader reader, String message) {
+		super(reader, message);
+	}
+
+	public FormatViolationException(JsonStreamReader reader, Throwable cause) {
+		super(reader, "Format violation", cause);
+	}
+
+	public FormatViolationException(JsonStreamReader reader, String message, Throwable cause) {
+		super(reader, message, cause);
 	}
 }

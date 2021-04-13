@@ -25,7 +25,6 @@ import org.quiltmc.json5.impl.stream.JsonStreamReaderImpl;
 import org.quiltmc.json5.impl.stream.JsonStreamWriterImpl;
 import org.quiltmc.json5.impl.visitor.JsonWriterImpl;
 import org.quiltmc.json5.impl.visitor.ReaderToVisitorAdapter;
-import org.quiltmc.json5.impl.visitor.TreeVisitor;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -36,7 +35,7 @@ import java.nio.file.Path;
 public final class JsonApi {
 	/**
 	 * Parses a JSON5 file into a tree of its values.
-	 * @return A {@link String}, {@link Boolean}, {@link Number}, {@link JsonNull},
+	 * @return A {@link String}, {@link Boolean}, {@link Number}, {@code null},
 	 * or a {@link java.util.LinkedHashMap}&lt;String, Object&gt; or {@link java.util.List}&lt;Object&gt; containing any of these types.
 	 * @throws ParseException if the file is unable to be read or parsed
 	 */
@@ -50,21 +49,20 @@ public final class JsonApi {
 
 	/**
 	 * Parses JSON5 text into a tree of its values.
-	 * @return A {@link String}, {@link Boolean}, {@link Number}, {@link JsonNull},
+	 * @return A {@link String}, {@link Boolean}, {@link Number}, {@code null},
 	 * or a {@link java.util.LinkedHashMap}&lt;String, Object&gt; or {@link java.util.List}&lt;Object&gt; containing any of these types.
 	 * @throws ParseException if the text is unable to be parsed
 	 */
 	public static Object parseToTree(String text) throws IOException {
-		TreeVisitor visitor = new TreeVisitor();
-		visit(text, visitor);
-		return visitor.root;
+		try (JsonStreamReader reader = streamReader(text)) {
+			return parseToTree(reader);
+		}
 	}
 
 	public static Object parseToTree(JsonStreamReader reader) throws IOException {
-		TreeVisitor visitor = new TreeVisitor();
-		visit(reader, visitor);
-		return visitor.root;
+		return JsonInternal.readTree(reader);
 	}
+
 	/**
 	 * @throws ParseException if the path could not be read or parsed
 	 * @throws org.quiltmc.json5.api.exception.FormatViolationException if the text does not follow the format expected by the visitor.
@@ -104,7 +102,7 @@ public final class JsonApi {
 
 	public static JsonStreamReader streamReader(String text) throws IOException {
 		//return new JsonStreamReaderImpl(parseToTree(text));
-		throw new IOException("ex");
+		throw new UnsupportedOperationException("Implement me!");
 	}
 
 	public static JsonWriter writer(Path path) throws IOException {

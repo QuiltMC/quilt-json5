@@ -332,9 +332,9 @@ public interface JsonStreamReader extends Closeable {
 	 * stream contains unrecognized or unhandled values.
 	 */
 	void skipValue() throws IOException;
+
 	/**
-	 * Returns a <a href="http://goessner.net/articles/JsonPath/">JsonPath</a> to
-	 * the current location in the JSON value.
+	 * @return a <a href="http://goessner.net/articles/JsonPath/">JsonPath</a> to the current location in the input JSON.
 	 */
-	String getPath() throws IOException;
+	String path();
 }

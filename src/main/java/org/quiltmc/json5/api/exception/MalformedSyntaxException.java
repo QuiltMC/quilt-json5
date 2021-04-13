@@ -16,15 +16,41 @@
 
 package org.quiltmc.json5.api.exception;
 
+import org.quiltmc.json5.api.stream.JsonStreamReader;
+
 /**
  * An exception to be thrown by a parser when the syntax of a file is invalid.
  */
 public class MalformedSyntaxException extends ParseException {
-	public MalformedSyntaxException(Throwable cause) {
-		super(cause);
+	public MalformedSyntaxException() {
+		super();
 	}
 
 	public MalformedSyntaxException(String message) {
 		super(message);
+	}
+
+	public MalformedSyntaxException(Throwable cause) {
+		super(cause);
+	}
+
+	public MalformedSyntaxException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public MalformedSyntaxException(JsonStreamReader reader) {
+		super(reader, "Malformed syntax");
+	}
+
+	public MalformedSyntaxException(JsonStreamReader reader, String message) {
+		super(reader, message);
+	}
+
+	public MalformedSyntaxException(JsonStreamReader reader, Throwable cause) {
+		super(reader, "Malformed syntax", cause);
+	}
+
+	public MalformedSyntaxException(JsonStreamReader reader, String message, Throwable cause) {
+		super(reader, message, cause);
 	}
 }

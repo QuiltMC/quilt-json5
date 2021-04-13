@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.io.Writer;
 
 /*
  * This API is meant to be a nearly drop-in replacement for GSON's JsonWriter API.

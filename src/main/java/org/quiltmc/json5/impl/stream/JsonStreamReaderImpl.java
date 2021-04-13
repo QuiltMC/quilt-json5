@@ -1218,11 +1218,10 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 	String locationString() {
 		int line = lineNumber + 1;
 		int column = pos - lineStart + 1;
-		return " at line " + line + " column " + column + " path " + getPath();
+		return " at line " + line + " column " + column + " path " + path();
 	}
 
-
-	public String getPath() {
+	public String path() {
 		StringBuilder result = new StringBuilder().append('$');
 		for (int i = 0, size = stackSize; i < size; i++) {
 			switch (stack[i]) {
