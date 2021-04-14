@@ -18,7 +18,7 @@ package org.quiltmc.json5.test;
 
 import org.junit.jupiter.api.Test;
 import org.quiltmc.json5.api.JsonApi;
-import org.quiltmc.json5.api.visitor.writer.JsonWriter;
+import org.quiltmc.json5.api.stream.JsonStreamWriter;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -28,22 +28,24 @@ class WriteTests {
 	void write() throws IOException {
 		StringWriter w = new StringWriter();
 
-		try (JsonWriter writer = JsonApi.writer(w)) {
+		try (JsonStreamWriter writer = JsonApi.streamWriter(w)) {
 			writer.comment("Top comment\nLook mom, multiple lines from one string\nin the input!")
 					.comment("This one, however, was a different call to comment().")
-					.writeObject()
-					.comment("If strict mode was off this would be \"value\" instead.")
-					.writeArray("value", "Isn't this pretty printing nice!")
-					.comment("This is the maximum value of a signed long")
-					.write(Long.MAX_VALUE, "(Long.MAX_VALUE in java)")
-					.write(Double.NaN, "NaN is only allowed when strict mode is off")
-					.write("a string\nwith multiline", "Strings are sanitized how you would expect.")
-					.comment("But unfortunately our array journey has come  to a close :(")
-					.pop()
-					.comment("Surprise! Another value approaches!")
-					.write("another_value", "chicken nuggets" )
-					.comment("Wow this sure is a lot of comments huh")
-					.pop()
+					.beginObject()
+						.comment("If strict mode was off this would be \"value\" instead.")
+						.name("value")
+						.beginArray()
+							.blockComment("Isn't this pretty printing nice!")
+							.comment("This is the maximum value of a signed long")
+							.value(Long.MAX_VALUE).blockComment("(Long.MAX_VALUE in java)")
+							.value(Double.NaN).blockComment("NaN is only allowed when strict mode is off")
+							.value("a string\nwith multiline").blockComment("Strings are sanitized how you would expect.")
+							.comment("But unfortunately our array journey has come to a close :(")
+						.endArray()
+						.comment("Surprise! Another value approaches!")
+						.name("another_value").value("chicken nuggets")
+						.comment("Wow this sure is a lot of comments huh")
+					.endObject()
 					.comment("Glad that's over.");
 
 			// Yes you should flush your writers, but string writer does not need it.

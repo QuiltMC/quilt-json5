@@ -19,10 +19,8 @@ package org.quiltmc.json5.api;
 import org.quiltmc.json5.api.exception.ParseException;
 import org.quiltmc.json5.api.stream.JsonStreamReader;
 import org.quiltmc.json5.api.stream.JsonStreamWriter;
-import org.quiltmc.json5.api.visitor.writer.JsonWriter;
 import org.quiltmc.json5.impl.stream.JsonStreamReaderImpl;
 import org.quiltmc.json5.impl.stream.JsonStreamWriterImpl;
-import org.quiltmc.json5.impl.visitor.JsonWriterImpl;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -37,12 +35,8 @@ public final class JsonApi {
 	 * or a {@link java.util.LinkedHashMap}&lt;String, Object&gt; or {@link java.util.List}&lt;Object&gt; containing any of these types.
 	 * @throws ParseException if the file is unable to be read or parsed
 	 */
-	public static Object parseToTree(Path path) {
-		try {
-			return parseToTree(new String(Files.readAllBytes(path)));
-		} catch (IOException ex) {
-			throw new ParseException("Unable to read file: ", ex);
-		}
+	public static Object parseToTree(Path path) throws IOException {
+		return parseToTree(new String(Files.readAllBytes(path)));
 	}
 
 	/**
@@ -67,18 +61,6 @@ public final class JsonApi {
 
 	public static JsonStreamReader streamReader(String text) throws IOException {
 		return new JsonStreamReaderImpl(new StringReader(text));
-	}
-
-	public static JsonWriter writer(Path path) throws IOException {
-		return new JsonWriterImpl(streamWriter(path));
-	}
-
-	public static JsonWriter writer(Writer writer) throws IOException {
-		return new JsonWriterImpl(streamWriter(writer));
-	}
-
-	public static JsonWriter writer(JsonStreamWriter writer) throws IOException {
-		return new JsonWriterImpl(writer);
 	}
 
 	// we don't wrap the IOException because JsonWriter already is covered in throws
