@@ -45,6 +45,9 @@ class WriteTests {
 					.comment("Wow this sure is a lot of comments huh")
 					.pop()
 					.comment("Glad that's over.");
+
+			// Yes you should flush your writers, but string writer does not need it.
+			// writer.flush();
 		}
 
 		System.out.println(w);
