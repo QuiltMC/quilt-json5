@@ -101,8 +101,7 @@ public final class JsonApi {
 	}
 
 	public static JsonStreamReader streamReader(String text) throws IOException {
-		//return new JsonStreamReaderImpl(parseToTree(text));
-		throw new UnsupportedOperationException("Implement me!");
+		return new JsonStreamReaderImpl(new StringReader(text));
 	}
 
 	public static JsonWriter writer(Path path) throws IOException {

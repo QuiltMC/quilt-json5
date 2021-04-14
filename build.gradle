@@ -33,6 +33,7 @@ test {
         events "passed", "skipped", "failed"
     }
 }
+
 // Target java 8
 tasks.withType(JavaCompile).configureEach {
     if (JavaVersion.current().isJava9Compatible()) {
