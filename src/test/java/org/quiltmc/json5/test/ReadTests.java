@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ReadTests {
 	@TestFactory
 	Stream<DynamicTest> validJson5() throws IOException {
-		return Files.walk(Paths.get("tests")).filter(path -> {
+		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
 			String str = path.toString();
 			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && (str.endsWith(".json") || str.endsWith(".json5"));
 		}).map(path -> DynamicTest.dynamicTest("Valid JSON5: " + path, () -> {
@@ -50,7 +50,7 @@ class ReadTests {
 
 	@TestFactory
 	Stream<DynamicTest> json5IsInvalidJson() throws IOException {
-		return Files.walk(Paths.get("tests")).filter(path -> {
+		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
 			String str = path.toString();
 			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && str.endsWith(".json5");
 		}).map(path ->
@@ -74,7 +74,7 @@ class ReadTests {
 
 	@TestFactory
 	Stream<DynamicTest> invalidJson5() throws IOException {
-		return Files.walk(Paths.get("tests")).filter(path -> {
+		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
 			String str = path.toString();
 			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && (str.endsWith(".js") || str.endsWith(".txt"));
 		}).map(path ->

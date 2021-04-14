@@ -27,25 +27,26 @@ class WriteTests {
 	@Test()
 	void write() throws IOException {
 		StringWriter w = new StringWriter();
-		JsonWriter writer = JsonApi.writer(w);
-		writer.comment("Top comment\nLook mom, multiple lines from one string\nin the input!")
-				.comment("This one, however, was a different call to comment().")
-				.writeObject()
-				.comment("If strict mode was off this would be \"value\" instead.")
-				.writeArray("value", "Isn't this pretty printing nice!")
-				.comment("This is the maximum value of a signed long")
-				.write(Long.MAX_VALUE, "(Long.MAX_VALUE in java)")
-				.write(Double.NaN, "NaN is only allowed when strict mode is off")
-				.write("a string\nwith multiline", "Strings are sanitized how you would expect.")
-				.comment("But unfortunately our array journey has come  to a close :(")
-				.pop()
-				.comment("Surprise! Another value approaches!")
-				.write("another_value", "chicken nuggets" )
-				.comment("Wow this sure is a lot of comments huh")
-				.pop()
-				.comment("Glad that's over.");
-		writer.flush();
-		writer.close();
+
+		try (JsonWriter writer = JsonApi.writer(w)) {
+			writer.comment("Top comment\nLook mom, multiple lines from one string\nin the input!")
+					.comment("This one, however, was a different call to comment().")
+					.writeObject()
+					.comment("If strict mode was off this would be \"value\" instead.")
+					.writeArray("value", "Isn't this pretty printing nice!")
+					.comment("This is the maximum value of a signed long")
+					.write(Long.MAX_VALUE, "(Long.MAX_VALUE in java)")
+					.write(Double.NaN, "NaN is only allowed when strict mode is off")
+					.write("a string\nwith multiline", "Strings are sanitized how you would expect.")
+					.comment("But unfortunately our array journey has come  to a close :(")
+					.pop()
+					.comment("Surprise! Another value approaches!")
+					.write("another_value", "chicken nuggets" )
+					.comment("Wow this sure is a lot of comments huh")
+					.pop()
+					.comment("Glad that's over.");
+		}
+
 		System.out.println(w);
 	}
 }
