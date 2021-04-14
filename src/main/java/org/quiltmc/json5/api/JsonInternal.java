@@ -24,14 +24,13 @@ import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.api.exception.MalformedSyntaxException;
-import org.quiltmc.json5.api.stream.JsonStreamReader;
 
 /**
  * Utility class to hold methods considered as part of implementation detail.
  */
 final class JsonInternal {
 	@Nullable
-	static Object readTree(JsonStreamReader reader) throws IOException, MalformedSyntaxException {
+	static Object readTree(JsonReader reader) throws IOException, MalformedSyntaxException {
 		switch (reader.peek()) {
 		case BEGIN_ARRAY:
 			reader.beginArray();

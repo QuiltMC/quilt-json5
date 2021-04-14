@@ -18,7 +18,7 @@ package org.quiltmc.json5.impl.stream;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.api.stream.JsonStreamWriter;
+import org.quiltmc.json5.api.JsonWriter;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -39,7 +39,7 @@ import static org.quiltmc.json5.impl.stream.JsonScope.NONEMPTY_OBJECT;
  * https://github.com/google/gson/blob/530cb7447089ccc12dc2009c17f468ddf2cd61ca/gson/src/main/java/com/google/gson/stream/JsonReader.java
  */
 @ApiStatus.Internal
-public class JsonStreamWriterImpl implements JsonStreamWriter {
+public class JsonWriterImpl implements JsonWriter {
 
 	/*
 	 * From RFC 7159, "All Unicode characters may be placed within the
@@ -110,7 +110,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 * For best performance, ensure {@link Writer} is buffered; wrapping in
 	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
 	 */
-	public JsonStreamWriterImpl(Writer out) {
+	public JsonWriterImpl(Writer out) {
 		if (out == null) {
 			throw new NullPointerException("out == null");
 		}
@@ -198,7 +198,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl beginArray() throws IOException {
+	public JsonWriterImpl beginArray() throws IOException {
 		writeDeferredName();
 		return open(EMPTY_ARRAY, '[');
 	}
@@ -208,7 +208,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl endArray() throws IOException {
+	public JsonWriterImpl endArray() throws IOException {
 		return close(EMPTY_ARRAY, NONEMPTY_ARRAY, ']');
 	}
 
@@ -218,7 +218,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl beginObject() throws IOException {
+	public JsonWriterImpl beginObject() throws IOException {
 		writeDeferredName();
 		return open(EMPTY_OBJECT, '{');
 	}
@@ -228,7 +228,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl endObject() throws IOException {
+	public JsonWriterImpl endObject() throws IOException {
 		return close(EMPTY_OBJECT, NONEMPTY_OBJECT, '}');
 	}
 
@@ -236,7 +236,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 * Enters a new scope by appending any necessary whitespace and the given
 	 * bracket.
 	 */
-	private JsonStreamWriterImpl open(int empty, char openBracket) throws IOException {
+	private JsonWriterImpl open(int empty, char openBracket) throws IOException {
 		beforeValue();
 		push(empty);
 		out.write(openBracket);
@@ -247,7 +247,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 * Closes the current scope by appending any necessary whitespace and the
 	 * given bracket.
 	 */
-	private JsonStreamWriterImpl close(int empty, int nonempty, char closeBracket)
+	private JsonWriterImpl close(int empty, int nonempty, char closeBracket)
 			throws IOException {
 		int context = peek();
 		if (context != nonempty && context != empty) {
@@ -295,7 +295,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 * @param name the name of the forthcoming value. May not be null.
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl name(String name) throws IOException {
+	public JsonWriterImpl name(String name) throws IOException {
 		if (name == null) {
 			throw new NullPointerException("name == null");
 		}
@@ -319,7 +319,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 
 
 	@Override
-	public JsonStreamWriter comment(String comment) throws IOException {
+	public JsonWriter comment(String comment) throws IOException {
 		if (compact || strict || comment == null) {
 			return this;
 		}
@@ -340,7 +340,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	}
 
 	@Override
-	public JsonStreamWriter blockComment(@Nullable String comment) throws IOException {
+	public JsonWriter blockComment(@Nullable String comment) throws IOException {
 		// TODO
 		return comment(comment);
 	}
@@ -369,7 +369,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 * @param value the literal string value, or null to encode a null literal.
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl value(String value) throws IOException {
+	public JsonWriterImpl value(String value) throws IOException {
 		if (value == null) {
 			return nullValue();
 		}
@@ -386,7 +386,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 * @param value the literal string value, or null to encode a null literal.
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl jsonValue(String value) throws IOException {
+	public JsonWriterImpl jsonValue(String value) throws IOException {
 		if (value == null) {
 			return nullValue();
 		}
@@ -401,7 +401,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl nullValue() throws IOException {
+	public JsonWriterImpl nullValue() throws IOException {
 		if (deferredName != null) {
 			if (serializeNulls) {
 				writeDeferredName();
@@ -420,7 +420,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl value(boolean value) throws IOException {
+	public JsonWriterImpl value(boolean value) throws IOException {
 		writeDeferredName();
 		beforeValue();
 		out.write(value ? "true" : "false");
@@ -432,7 +432,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl value(Boolean value) throws IOException {
+	public JsonWriterImpl value(Boolean value) throws IOException {
 		if (value == null) {
 			return nullValue();
 		}
@@ -449,7 +449,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *     {@link Double#isInfinite() infinities}.
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl value(double value) throws IOException {
+	public JsonWriterImpl value(double value) throws IOException {
 		writeDeferredName();
 		if (strict && (Double.isNaN(value) || Double.isInfinite(value))) {
 			throw new IllegalArgumentException("Numeric values must be finite, but was " + value);
@@ -464,7 +464,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl value(long value) throws IOException {
+	public JsonWriterImpl value(long value) throws IOException {
 		writeDeferredName();
 		beforeValue();
 		out.write(Long.toString(value));
@@ -478,7 +478,7 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 *     {@link Double#isInfinite() infinities}.
 	 * @return this writer.
 	 */
-	public JsonStreamWriterImpl value(Number value) throws IOException {
+	public JsonWriterImpl value(Number value) throws IOException {
 		if (value == null) {
 			return nullValue();
 		}

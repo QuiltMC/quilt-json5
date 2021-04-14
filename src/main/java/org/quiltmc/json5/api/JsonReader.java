@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api.stream;
+package org.quiltmc.json5.api;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.json5.api.JsonToken;
+import org.quiltmc.json5.impl.stream.JsonReaderImpl;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
 
 /*
  * This API is meant to be a drop-in replacement for GSON's JsonReader API.
@@ -195,7 +201,26 @@ import java.io.IOException;
  * of this class are not thread safe.
  */
 @ApiStatus.NonExtendable
-public interface JsonStreamReader extends Closeable {
+public interface JsonReader extends Closeable {
+	// TODO: Convert these static methods to constructors
+	static JsonReader reader(Path path) throws IOException {
+		Objects.requireNonNull(path, "Path cannot be null");
+
+		return reader(Files.newBufferedReader(path));
+	}
+
+	static JsonReader reader(String text) {
+		Objects.requireNonNull(text, "Text cannot be null");
+
+		return reader(new StringReader(text));
+	}
+
+	static JsonReader reader(Reader reader) {
+		Objects.requireNonNull(reader, "Reader cannot be null");
+
+		return new JsonReaderImpl(reader);
+	}
+
 	/**
 	 * Disables JSON5-specific features. This includes, but is not limited to: comments, lack of quotes around object keys,
 	 * trailing commas, hexadecimal numbers, and enhanced floating point numbers.

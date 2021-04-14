@@ -18,10 +18,9 @@ package org.quiltmc.json5.test;
 
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
-import org.quiltmc.json5.api.JsonApi;
 import org.quiltmc.json5.api.JsonToken;
 import org.quiltmc.json5.api.exception.ParseException;
-import org.quiltmc.json5.api.stream.JsonStreamReader;
+import org.quiltmc.json5.api.JsonReader;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,7 +40,7 @@ class ReadTests {
 			System.out.println(path);
 			System.out.println();
 
-			try (JsonStreamReader reader = JsonApi.streamReader(path)) {
+			try (JsonReader reader = JsonReader.reader(path)) {
 				read(reader);
 			}
 			// JsonApi.visit(path, new BasicVisitor());
@@ -59,7 +58,7 @@ class ReadTests {
 				System.out.println(path);
 				System.out.println();
 
-				try (JsonStreamReader reader = JsonApi.streamReader(path)) {
+				try (JsonReader reader = JsonReader.reader(path)) {
 					reader.setStrictJson();
 					read(reader);
 				} catch (Throwable e) {
@@ -83,7 +82,7 @@ class ReadTests {
 					System.out.println(path);
 					System.out.println();
 
-					try (JsonStreamReader reader = JsonApi.streamReader(path)) {
+					try (JsonReader reader = JsonReader.reader(path)) {
 						read(reader);
 						//JsonApi.visit(path, new BasicVisitor());
 					} catch (Throwable t) {
@@ -93,14 +92,14 @@ class ReadTests {
 		);
 	}
 
-	static void read(JsonStreamReader reader) throws IOException, ParseException {
+	static void read(JsonReader reader) throws IOException, ParseException {
 		innerRead(reader, 0);
 
 		// Make sure we hit end of document
 		assertEquals(reader.peek(), JsonToken.END_DOCUMENT);
 	}
 
-	private static void innerRead(JsonStreamReader reader, int depth) throws IOException {
+	private static void innerRead(JsonReader reader, int depth) throws IOException {
 		// TODO JDK Update: We likely will not be using Java 11 for a long time in this library unlike the toolchain.
 		//  When we do move to something above 11 or above replace the stuff below with `String.repeat()`.
 

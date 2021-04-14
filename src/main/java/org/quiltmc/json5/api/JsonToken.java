@@ -15,8 +15,6 @@
  */
 
 package org.quiltmc.json5.api;
-import org.quiltmc.json5.api.stream.JsonStreamReader;
-import org.quiltmc.json5.api.stream.JsonStreamWriter;
 
 /*
  * This is a carbon-copy of Gson's JsonToken.
@@ -32,33 +30,33 @@ import org.quiltmc.json5.api.stream.JsonStreamWriter;
 public enum JsonToken {
 
 	/**
-	 * The opening of a JSON array. Written using {@link JsonStreamWriter#beginArray}
-	 * and read using {@link JsonStreamReader#beginArray}.
+	 * The opening of a JSON array. Written using {@link JsonWriter#beginArray}
+	 * and read using {@link JsonReader#beginArray}.
 	 */
 	BEGIN_ARRAY,
 
 	/**
-	 * The closing of a JSON array. Written using {@link JsonStreamWriter#endArray}
-	 * and read using {@link JsonStreamReader#endArray}.
+	 * The closing of a JSON array. Written using {@link JsonWriter#endArray}
+	 * and read using {@link JsonReader#endArray}.
 	 */
 	END_ARRAY,
 
 	/**
-	 * The opening of a JSON object. Written using {@link JsonStreamWriter#beginObject}
-	 * and read using {@link JsonStreamReader#beginObject}.
+	 * The opening of a JSON object. Written using {@link JsonWriter#beginObject}
+	 * and read using {@link JsonReader#beginObject}.
 	 */
 	BEGIN_OBJECT,
 
 	/**
-	 * The closing of a JSON object. Written using {@link JsonStreamWriter#endObject}
-	 * and read using {@link JsonStreamReader#endObject}.
+	 * The closing of a JSON object. Written using {@link JsonWriter#endObject}
+	 * and read using {@link JsonReader#endObject}.
 	 */
 	END_OBJECT,
 
 	/**
 	 * A JSON property name. Within objects, tokens alternate between names and
-	 * their values. Written using {@link JsonStreamWriter#name} and read using {@link
-	 * JsonStreamReader#nextName}
+	 * their values. Written using {@link JsonWriter#name} and read using {@link
+	 * JsonReader#nextName}
 	 */
 	NAME,
 
@@ -85,7 +83,7 @@ public enum JsonToken {
 
 	/**
 	 * The end of the JSON stream. This sentinel value is returned by {@link
-	 * JsonStreamReader#peek()} to signal that the JSON-encoded value has no more
+	 * JsonReader#peek()} to signal that the JSON-encoded value has no more
 	 * tokens.
 	 */
 	END_DOCUMENT

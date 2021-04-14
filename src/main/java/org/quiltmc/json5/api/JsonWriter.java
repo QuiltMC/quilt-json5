@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api.stream;
+package org.quiltmc.json5.api;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.json5.impl.stream.JsonWriterImpl;
 
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
 
 /*
  * This API is meant to be a nearly drop-in replacement for GSON's JsonWriter API.
@@ -127,7 +131,20 @@ import java.io.Writer;
  */
 
 @ApiStatus.NonExtendable
-public interface JsonStreamWriter extends AutoCloseable, Flushable {
+public interface JsonWriter extends AutoCloseable, Flushable {
+	// TODO: Convert these static methods to constructors
+	static JsonWriter writer(Path path) throws IOException {
+		Objects.requireNonNull(path, "Path cannot be null");
+
+		return writer(Files.newBufferedWriter(path));
+	}
+
+	static JsonWriter writer(Writer writer) {
+		Objects.requireNonNull(writer, "Writer cannot be null");
+
+		return new JsonWriterImpl(writer);
+	}
+
 	/**
 	 * Sets the indentation string to be repeated for each level of indentation
 	 * in the encoded document. If {@code indent.isEmpty()} the encoded document
@@ -192,14 +209,14 @@ public interface JsonStreamWriter extends AutoCloseable, Flushable {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter beginArray() throws IOException;
+	public JsonWriter beginArray() throws IOException;
 
 	/**
 	 * Ends encoding the current array.
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter endArray() throws IOException;
+	public JsonWriter endArray() throws IOException;
 
 	/**
 	 * Begins encoding a new object. Each call to this method must be paired
@@ -207,14 +224,14 @@ public interface JsonStreamWriter extends AutoCloseable, Flushable {
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter beginObject() throws IOException;
+	public JsonWriter beginObject() throws IOException;
 
 	/**
 	 * Ends encoding the current object.
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter endObject() throws IOException;
+	public JsonWriter endObject() throws IOException;
 
 	/**
 	 * Encodes the property name.
@@ -222,21 +239,21 @@ public interface JsonStreamWriter extends AutoCloseable, Flushable {
 	 * @param name the name of the forthcoming value. May not be null.
 	 * @return this writer.
 	 */
-	JsonStreamWriter name(String name) throws IOException;
+	JsonWriter name(String name) throws IOException;
 
 	/**
 	 * Encodes a comment, handling newlines and HTML safety gracefully. Silently does nothing when strict JSON mode is enabled.
 	 * @param comment the comment to write, or null to encode nothing.
 	 */
-	JsonStreamWriter comment(@Nullable String comment) throws IOException;
-	JsonStreamWriter blockComment(@Nullable String comment) throws IOException;
+	JsonWriter comment(@Nullable String comment) throws IOException;
+	JsonWriter blockComment(@Nullable String comment) throws IOException;
 	/**
 	 * Encodes {@code value}.
 	 *
 	 * @param value the literal string value, or null to encode a null literal.
 	 * @return this writer.
 	 */
-	public JsonStreamWriter value(String value) throws IOException;
+	public JsonWriter value(String value) throws IOException;
 
 	/**
 	 * Writes {@code value} directly to the writer without quoting or
@@ -245,28 +262,28 @@ public interface JsonStreamWriter extends AutoCloseable, Flushable {
 	 * @param value the literal string value, or null to encode a null literal.
 	 * @return this writer.
 	 */
-	public JsonStreamWriter jsonValue(String value) throws IOException;
+	public JsonWriter jsonValue(String value) throws IOException;
 
 	/**
 	 * Encodes {@code null}.
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter nullValue() throws IOException;
+	public JsonWriter nullValue() throws IOException;
 
 	/**
 	 * Encodes {@code value}.
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter value(boolean value) throws IOException;
+	public JsonWriter value(boolean value) throws IOException;
 
 	/**
 	 * Encodes {@code value}.
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter value(Boolean value) throws IOException;
+	public JsonWriter value(Boolean value) throws IOException;
 
 	/**
 	 * Encodes {@code value}.
@@ -275,14 +292,14 @@ public interface JsonStreamWriter extends AutoCloseable, Flushable {
 	 *     {@link Double#isInfinite() infinities}.
 	 * @return this writer.
 	 */
-	public JsonStreamWriter value(double value) throws IOException;
+	public JsonWriter value(double value) throws IOException;
 
 	/**
 	 * Encodes {@code value}.
 	 *
 	 * @return this writer.
 	 */
-	public JsonStreamWriter value(long value) throws IOException;
+	public JsonWriter value(long value) throws IOException;
 
 	/**
 	 * Encodes {@code value}.
@@ -291,7 +308,7 @@ public interface JsonStreamWriter extends AutoCloseable, Flushable {
 	 *     {@link Double#isInfinite() infinities} if in strict mode.
 	 * @return this writer.
 	 */
-	public JsonStreamWriter value(Number value) throws IOException;
+	public JsonWriter value(Number value) throws IOException;
 
 	/**
 	 * Ensures all buffered data is written to the underlying {@link Writer}

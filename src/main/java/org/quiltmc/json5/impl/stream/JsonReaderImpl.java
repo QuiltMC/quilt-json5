@@ -18,7 +18,7 @@ package org.quiltmc.json5.impl.stream;
 
 import org.quiltmc.json5.api.JsonToken;
 import org.quiltmc.json5.api.exception.MalformedSyntaxException;
-import org.quiltmc.json5.api.stream.JsonStreamReader;
+import org.quiltmc.json5.api.JsonReader;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.util.Arrays;
  * You may view the original, including its license header, here:
  * https://github.com/google/gson/blob/530cb7447089ccc12dc2009c17f468ddf2cd61ca/gson/src/main/java/com/google/gson/stream/JsonReader.java
  */
-public class JsonStreamReaderImpl implements JsonStreamReader {
+public class JsonReaderImpl implements JsonReader {
 	private static final int PEEKED_NONE = 0;
 	private static final int PEEKED_BEGIN_OBJECT = 1;
 	private static final int PEEKED_END_OBJECT = 2;
@@ -122,7 +122,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 	/**
 	 * Creates a new instance that reads a JSON-encoded stream from {@code in}.
 	 */
-	public JsonStreamReaderImpl(Reader in) {
+	public JsonReaderImpl(Reader in) {
 		if (in == null) {
 			throw new NullPointerException("in == null");
 		}

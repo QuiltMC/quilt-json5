@@ -18,8 +18,7 @@ package org.quiltmc.json5.test;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.quiltmc.json5.api.JsonApi;
-import org.quiltmc.json5.api.stream.JsonStreamWriter;
+import org.quiltmc.json5.api.JsonWriter;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -29,7 +28,7 @@ class WriteTests {
 	void write() throws IOException {
 		StringWriter w = new StringWriter();
 
-		try (JsonStreamWriter writer = JsonApi.streamWriter(w)) {
+		try (JsonWriter writer = JsonWriter.writer(w)) {
 			sampleWrite(writer);
 			// Yes you should flush your writers, but string writer does not need it.
 			// writer.flush();
@@ -44,7 +43,7 @@ class WriteTests {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			StringWriter w = new StringWriter();
 
-			try (JsonStreamWriter writer = JsonApi.streamWriter(w)) {
+			try (JsonWriter writer = JsonWriter.writer(w)) {
 				writer.setStrict(true);
 				sampleWrite(writer);
 				// Yes you should flush your writers, but string writer does not need it.
@@ -59,7 +58,7 @@ class WriteTests {
 	void writeCompat() throws IOException {
 		StringWriter w = new StringWriter();
 
-		try (JsonStreamWriter writer = JsonApi.streamWriter(w)) {
+		try (JsonWriter writer = JsonWriter.writer(w)) {
 			writer.setCompact();
 			sampleWrite(writer);
 			// Yes you should flush your writers, but string writer does not need it.
@@ -80,7 +79,7 @@ class WriteTests {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			StringWriter w = new StringWriter();
 
-			try (JsonStreamWriter writer = JsonApi.streamWriter(w)) {
+			try (JsonWriter writer = JsonWriter.writer(w)) {
 				writer.setStrict(true);
 				writer.setCompact();
 				sampleWrite(writer);
@@ -92,7 +91,7 @@ class WriteTests {
 		});
 	}
 
-	static void sampleWrite(JsonStreamWriter writer) throws IOException {
+	static void sampleWrite(JsonWriter writer) throws IOException {
 		writer.comment("Top comment\nLook mom, multiple lines from one string\nin the input!")
 				.comment("This one, however, was a different call to comment().")
 				.beginObject()
