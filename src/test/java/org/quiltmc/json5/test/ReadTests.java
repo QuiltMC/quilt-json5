@@ -16,23 +16,15 @@
 
 package org.quiltmc.json5.test;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.quiltmc.json5.api.JsonApi;
 import org.quiltmc.json5.api.JsonToken;
 import org.quiltmc.json5.api.exception.ParseException;
 import org.quiltmc.json5.api.stream.JsonStreamReader;
-import org.quiltmc.json5.api.visitor.JsonArrayVisitor;
-import org.quiltmc.json5.api.visitor.JsonObjectVisitor;
-import org.quiltmc.json5.api.visitor.JsonVisitor;
-import org.quiltmc.json5.api.visitor.writer.JsonWriter;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 

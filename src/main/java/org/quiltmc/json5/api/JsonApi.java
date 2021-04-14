@@ -19,12 +19,10 @@ package org.quiltmc.json5.api;
 import org.quiltmc.json5.api.exception.ParseException;
 import org.quiltmc.json5.api.stream.JsonStreamReader;
 import org.quiltmc.json5.api.stream.JsonStreamWriter;
-import org.quiltmc.json5.api.visitor.JsonVisitor;
 import org.quiltmc.json5.api.visitor.writer.JsonWriter;
 import org.quiltmc.json5.impl.stream.JsonStreamReaderImpl;
 import org.quiltmc.json5.impl.stream.JsonStreamWriterImpl;
 import org.quiltmc.json5.impl.visitor.JsonWriterImpl;
-import org.quiltmc.json5.impl.visitor.ReaderToVisitorAdapter;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -61,39 +59,6 @@ public final class JsonApi {
 
 	public static Object parseToTree(JsonStreamReader reader) throws IOException {
 		return JsonInternal.readTree(reader);
-	}
-
-	/**
-	 * @throws ParseException if the path could not be read or parsed
-	 * @throws org.quiltmc.json5.api.exception.FormatViolationException if the text does not follow the format expected by the visitor.
-	 */
-	public static void visit(Path path, JsonVisitor visitor) {
-		try {
-			JsonStreamReaderImpl reader = new JsonStreamReaderImpl(Files.newBufferedReader(path));
-			ReaderToVisitorAdapter.visit(reader, visitor);
-			reader.close();
-		} catch (IOException e) {
-			throw new ParseException(e);
-		}
-	}
-
-	/**
-	 * @throws ParseException if the text could not be parsed
-	 * @throws org.quiltmc.json5.api.exception.FormatViolationException if the text does not follow the format expected by the visitor.
-	 */
-	public static void visit(String text, JsonVisitor visitor) {
-		try {
-			JsonStreamReaderImpl reader = new JsonStreamReaderImpl(new StringReader(text));
-			ReaderToVisitorAdapter.visit(reader, visitor);
-			reader.close();
-		} catch (IOException e) {
-			throw new ParseException(e);
-		}
-	}
-
-	public static void visit(JsonStreamReader reader, JsonVisitor visitor) throws IOException {
-		ReaderToVisitorAdapter.visit(reader, visitor);
-		reader.close();
 	}
 
 	public static JsonStreamReader streamReader(Path path) throws IOException {
