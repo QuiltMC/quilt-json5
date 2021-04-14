@@ -64,11 +64,13 @@ final class JsonInternal {
 			return reader.nextNumber();
 		case BOOLEAN:
 			return reader.nextBoolean();
+		case NULL:
+			return null;
 		// Invalid elements to read?
 		case NAME:
 		case END_ARRAY:
 		case END_OBJECT:
-		case NULL:
+		// End document will never be encountered.
 		case END_DOCUMENT:
 		default:
 			throw new MalformedSyntaxException(reader, "Invalid element encountered");
