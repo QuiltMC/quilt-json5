@@ -127,9 +127,11 @@ public class JsonStreamWriterImpl implements JsonStreamWriter {
 	 */
 	public final void setIndent(String indent) {
 		if (indent.length() == 0) {
+			this.compact = true;
 			this.indent = null;
 			this.separator = ":";
 		} else {
+			this.compact = false;
 			this.indent = indent;
 			this.separator = ": ";
 		}
