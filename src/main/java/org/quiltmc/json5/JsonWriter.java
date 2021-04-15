@@ -210,6 +210,8 @@ public final class JsonWriter implements Closeable, Flushable {
 
 	private boolean serializeNulls = true;
 
+	// API methods
+
 	/**
 	 * Creates a new instance that writes a JSON-encoded stream to {@code path}.
 	 * The caller must ensure the file at {@code path} exists.
