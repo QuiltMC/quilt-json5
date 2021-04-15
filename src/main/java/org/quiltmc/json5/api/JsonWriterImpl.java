@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.impl.stream;
+package org.quiltmc.json5.api;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.api.JsonWriter;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Arrays;
 
-import static org.quiltmc.json5.impl.stream.JsonScope.DANGLING_NAME;
-import static org.quiltmc.json5.impl.stream.JsonScope.EMPTY_ARRAY;
-import static org.quiltmc.json5.impl.stream.JsonScope.EMPTY_DOCUMENT;
-import static org.quiltmc.json5.impl.stream.JsonScope.EMPTY_OBJECT;
-import static org.quiltmc.json5.impl.stream.JsonScope.NONEMPTY_ARRAY;
-import static org.quiltmc.json5.impl.stream.JsonScope.NONEMPTY_DOCUMENT;
-import static org.quiltmc.json5.impl.stream.JsonScope.NONEMPTY_OBJECT;
-
+import static org.quiltmc.json5.api.JsonScope.DANGLING_NAME;
+import static org.quiltmc.json5.api.JsonScope.EMPTY_ARRAY;
+import static org.quiltmc.json5.api.JsonScope.EMPTY_DOCUMENT;
+import static org.quiltmc.json5.api.JsonScope.EMPTY_OBJECT;
+import static org.quiltmc.json5.api.JsonScope.NONEMPTY_ARRAY;
+import static org.quiltmc.json5.api.JsonScope.NONEMPTY_DOCUMENT;
+import static org.quiltmc.json5.api.JsonScope.NONEMPTY_OBJECT;
 
 /*
  * Gson is Copyright (C) 2010 Google Inc, under the Apache License Version 2.0 (the same as in the header above).
@@ -40,7 +38,6 @@ import static org.quiltmc.json5.impl.stream.JsonScope.NONEMPTY_OBJECT;
  */
 @ApiStatus.Internal
 public class JsonWriterImpl implements JsonWriter {
-
 	/*
 	 * From RFC 7159, "All Unicode characters may be placed within the
 	 * quotation marks except for the characters that must be escaped:

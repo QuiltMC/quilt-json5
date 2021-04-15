@@ -18,7 +18,6 @@ package org.quiltmc.json5.api;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.impl.stream.JsonWriterImpl;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -34,6 +33,7 @@ import java.util.Objects;
  * You may view the original, including its license header, here:
  * https://github.com/google/gson/blob/530cb7447089ccc12dc2009c17f468ddf2cd61ca/gson/src/main/java/com/google/gson/stream/JsonWriter.java
  */
+
 /**
  * Writes a <a href="https://json5.org/"> JSON5</a> or strict JSON (<a href="http://www.ietf.org/rfc/rfc7159.txt">RFC 7159</a>)
  * encoded value to a stream, one token at a time. The stream includes both

@@ -45,7 +45,7 @@ public final class Jsons {
 	 * @throws ParseException if the text is unable to be parsed
 	 */
 	public static Object parseToObject(String text) throws IOException {
-		try (JsonReader reader = JsonReader.reader(text)) {
+		try (JsonReader reader = new JsonReader(text)) {
 			return parseToObject(reader);
 		}
 	}
