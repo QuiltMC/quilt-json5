@@ -14,24 +14,43 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api.exception;
+package org.quiltmc.json5.exception;
+
+import org.quiltmc.json5.JsonReader;
 
 /**
  * A generic exception relating to an error in parsing, from loading the text to be read to emitting it's final representation.
  */
 public class ParseException extends RuntimeException {
 	public ParseException() {
+		super();
 	}
 
 	public ParseException(String message) {
 		super(message);
 	}
 
+	public ParseException(Throwable cause) {
+		super(cause);
+	}
+
 	public ParseException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
-	public ParseException(Throwable cause) {
-		super(cause);
+	public ParseException(JsonReader reader) {
+		this(reader, "Parse exception");
+	}
+
+	public ParseException(JsonReader reader, String message) {
+		super(String.format("%s %s", message, reader.path()));
+	}
+
+	public ParseException(JsonReader reader, Throwable cause) {
+		this(reader, "Parse exception", cause);
+	}
+
+	public ParseException(JsonReader reader, String message, Throwable cause) {
+		super(String.format("%s %s", message, reader.path()), cause);
 	}
 }

@@ -14,25 +14,201 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.impl.stream;
+package org.quiltmc.json5;
 
-import org.quiltmc.json5.api.JsonToken;
-import org.quiltmc.json5.api.exception.MalformedSyntaxException;
-import org.quiltmc.json5.api.stream.JsonStreamReader;
+import org.quiltmc.json5.exception.MalformedSyntaxException;
 
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Objects;
 
 /*
  * Gson is Copyright (C) 2010 Google Inc, under the Apache License Version 2.0 (the same as in the header above).
+ *
+ * The following changes have been applied:
+ * - The lenient mode has been replaced with a json5 mode, which only parses strict json5.
+ * - A strict JSON only mode has been added which will only parse valid JSON.
+ * - Parser changes to handle JSON5 syntax extensions.
+ * - Repackaged.
+ * - Other minor code style changes.
+ *
  * You may view the original, including its license header, here:
  * https://github.com/google/gson/blob/530cb7447089ccc12dc2009c17f468ddf2cd61ca/gson/src/main/java/com/google/gson/stream/JsonReader.java
  */
-public class JsonStreamReaderImpl implements JsonStreamReader {
+
+/**
+ * Reads <a href="https://json5.org/"> JSON5</a> or strict JSON (<a href="http://www.ietf.org/rfc/rfc7159.txt">RFC 7159</a>)
+ * encoded value as a stream of tokens. This stream includes both literal
+ * values (strings, numbers, booleans, and nulls) as well as the begin and
+ * end delimiters of objects and arrays. The tokens are traversed in
+ * depth-first order, the same order that they appear in the JSON document.
+ * Within JSON objects, name/value pairs are represented by a single token.
+ *
+ * <h3>Parsing JSON</h3>
+ * To create a recursive descent parser for your own JSON streams, first create
+ * an entry point method that creates a {@code JsonReader}.
+ *
+ * <p>Next, create handler methods for each structure in your JSON text. You'll
+ * need a method for each object type and for each array type.
+ * <ul>
+ *   <li>Within <strong>array handling</strong> methods, first call {@link
+ *       #beginArray} to consume the array's opening bracket. Then create a
+ *       while loop that accumulates values, terminating when {@link #hasNext}
+ *       is false. Finally, read the array's closing bracket by calling {@link
+ *       #endArray}.
+ *   <li>Within <strong>object handling</strong> methods, first call {@link
+ *       #beginObject} to consume the object's opening brace. Then create a
+ *       while loop that assigns values to local variables based on their name.
+ *       This loop should terminate when {@link #hasNext} is false. Finally,
+ *       read the object's closing brace by calling {@link #endObject}.
+ * </ul>
+ * <p>When a nested object or array is encountered, delegate to the
+ * corresponding handler method.
+ *
+ * <p>When an unknown name is encountered, strict parsers should fail with an
+ * exception. Lenient parsers should call {@link #skipValue()} to recursively
+ * skip the value's nested tokens, which may otherwise conflict.
+ *
+ * <p>If a value may be null, you should first check using {@link #peek()}.
+ * Null literals can be consumed using either {@link #nextNull()} or {@link
+ * #skipValue()}.
+ *
+ * <h3>Example</h3>
+ * Suppose we'd like to parse a stream of messages such as the following: <pre> {@code
+ * [
+ *   {
+ *     id: 912345678901,
+ *     text: "How do I read a JSON stream in Java?",
+ *     geo: null,
+ *     user: {
+ *       "name": "json_newb",
+ *       followers_count: 41,
+ *      }
+ *   },
+ *   {
+ *   /*
+ *    * Look mom, block comments!
+ *   *\/
+ *     "id": 912345678902,
+ *     "text": "@json_newb just use JsonReader!",
+ *     "geo": [-Infinity, NaN], // wow, broken floating point types!
+ *     "user": {
+ *       "name": "jesse",
+ *       "followers_count": 2
+ *     }
+ *   }
+ * ]}</pre>
+ * This code implements the parser for the above structure: <pre>   {@code
+ *
+ *   public List<Message> readJsonStream(InputStream in) throws IOException {
+ *     JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+ *     try {
+ *       return readMessagesArray(reader);
+ *     } finally {
+ *       reader.close();
+ *     }
+ *   }
+ *
+ *   public List<Message> readMessagesArray(JsonReader reader) throws IOException {
+ *     List<Message> messages = new ArrayList<Message>();
+ *
+ *     reader.beginArray();
+ *     while (reader.hasNext()) {
+ *       messages.add(readMessage(reader));
+ *     }
+ *     reader.endArray();
+ *     return messages;
+ *   }
+ *
+ *   public Message readMessage(JsonReader reader) throws IOException {
+ *     long id = -1;
+ *     String text = null;
+ *     User user = null;
+ *     List<Double> geo = null;
+ *
+ *     reader.beginObject();
+ *     while (reader.hasNext()) {
+ *       String name = reader.nextName();
+ *       if (name.equals("id")) {
+ *         id = reader.nextLong();
+ *       } else if (name.equals("text")) {
+ *         text = reader.nextString();
+ *       } else if (name.equals("geo") && reader.peek() != JsonToken.NULL) {
+ *         geo = readDoublesArray(reader);
+ *       } else if (name.equals("user")) {
+ *         user = readUser(reader);
+ *       } else {
+ *         reader.skipValue();
+ *       }
+ *     }
+ *     reader.endObject();
+ *     return new Message(id, text, user, geo);
+ *   }
+ *
+ *   public List<Double> readDoublesArray(JsonReader reader) throws IOException {
+ *     List<Double> doubles = new ArrayList<Double>();
+ *
+ *     reader.beginArray();
+ *     while (reader.hasNext()) {
+ *       doubles.add(reader.nextDouble());
+ *     }
+ *     reader.endArray();
+ *     return doubles;
+ *   }
+ *
+ *   public User readUser(JsonReader reader) throws IOException {
+ *     String username = null;
+ *     int followersCount = -1;
+ *
+ *     reader.beginObject();
+ *     while (reader.hasNext()) {
+ *       String name = reader.nextName();
+ *       if (name.equals("name")) {
+ *         username = reader.nextString();
+ *       } else if (name.equals("followers_count")) {
+ *         followersCount = reader.nextInt();
+ *       } else {
+ *         reader.skipValue();
+ *       }
+ *     }
+ *     reader.endObject();
+ *     return new User(username, followersCount);
+ *   }}</pre>
+ *
+ * <h3>Number Handling</h3>
+ * This reader permits numeric values to be read as strings and string values to
+ * be read as numbers. For example, both elements of the JSON array {@code
+ * [1, "1"]} may be read using either {@link #nextInt} or {@link #nextString}.
+ * This behavior is intended to prevent lossy numeric conversions: double is
+ * JavaScript's only numeric type and very large values like {@code
+ * 9007199254740993} cannot be represented exactly on that platform. To minimize
+ * precision loss, extremely large values should be written and read as strings
+ * in JSON.
+ *
+ * <a id="nonexecuteprefix"/><h3>Non-Execute Prefix</h3>
+ * Web servers that serve private data using JSON may be vulnerable to <a
+ * href="http://en.wikipedia.org/wiki/JSON#Cross-site_request_forgery">Cross-site
+ * request forgery</a> attacks. In such an attack, a malicious site gains access
+ * to a private JSON file by executing it with an HTML {@code <script>} tag.
+ *
+ * <p>Prefixing JSON files with <code>")]}'\n"</code> makes them non-executable
+ * by {@code <script>} tags, disarming the attack. Since the prefix is malformed
+ * JSON, strict parsing fails when it is encountered. This class permits the
+ * non-execute prefix unless {@link #disallowNonExecutePrefix()} is
+ * called before parsing occurs.
+ *
+ * <p>Each {@code JsonReader} may be used to read a single JSON stream. Instances
+ * of this class are not thread safe.
+ */
+public final class JsonReader implements Closeable {
 	private static final int PEEKED_NONE = 0;
 	private static final int PEEKED_BEGIN_OBJECT = 1;
 	private static final int PEEKED_END_OBJECT = 2;
@@ -119,67 +295,162 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 	private String[] pathNames = new String[32];
 	private int[] pathIndices = new int[32];
 
+	// API methods
+
+	/**
+	 * Creates a new instance that reads a JSON-encoded stream from the provided path.
+	 *
+	 * @param path path to read JSON from.
+	 * @throws IOException if an I/O error occurs trying to open the file at the path.
+	 */
+	public JsonReader(Path path) throws IOException {
+		this(Files.newBufferedReader(Objects.requireNonNull(path, "Path cannot be null")));
+	}
+
+	/**
+	 * Creates a new instance that reads a JSON-encoded stream from the provided string.
+	 *
+	 * <p>This is equivalent to passing a {@link StringReader} into {@link JsonReader#JsonReader(Reader)}.
+	 *
+	 * @param in the string to read JSON from.
+	 */
+	public JsonReader(String in) {
+		this(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")));
+	}
+
 	/**
 	 * Creates a new instance that reads a JSON-encoded stream from {@code in}.
 	 */
-	public JsonStreamReaderImpl(Reader in) {
+	public JsonReader(Reader in) {
 		if (in == null) {
 			throw new NullPointerException("in == null");
 		}
+
 		this.in = in;
 	}
 
-	@Override
+	/**
+	 * Disables JSON5-specific features. This includes, but is not limited to: comments, lack of quotes around object keys,
+	 * trailing commas, hexadecimal numbers, and enhanced floating point numbers.
+	 */
 	public void setStrictJson() {
 		this.strict = true;
 	}
 
-	@Override
+	/**
+	 * Returns true if this Reader will parse JSON strictly. Defaults to false.
+	 */
 	public boolean isStrictJson() {
 		return strict;
 	}
 
-	@Override
+	/**
+	 * Web servers that serve private data using JSON may be vulnerable to <a
+	 * href="http://en.wikipedia.org/wiki/JSON#Cross-site_request_forgery">Cross-site
+	 * request forgery</a> attacks. In such an attack, a malicious site gains access
+	 * to a private JSON file by executing it with an HTML {@code <script>} tag.
+	 *
+	 * <p>Prefixing JSON files with <code>")]}'\n"</code> makes them non-executable
+	 * by {@code <script>} tags, disarming the attack. Since the prefix is malformed
+	 * JSON, strict parsing fails when it is encountered. This class permits the
+	 * non-execute prefix unless {@link #disallowNonExecutePrefix()} is
+	 * called before parsing occurs.
+	 */
 	public void disallowNonExecutePrefix() {
 		this.allowNonExecutePrefix = false;
 	}
 
-	@Override
+	/**
+	 * Returns true if a non-execute prefix will be ignored at the beginning of this file. Defaults to true.
+	 */
 	public boolean allowsNonExecutePrefix() {
 		return allowNonExecutePrefix;
 	}
 
-
-	public void beginArray() throws IOException {
+	public boolean hasNext() throws IOException {
 		int p = peeked;
 		if (p == PEEKED_NONE) {
 			p = doPeek();
 		}
-		if (p == PEEKED_BEGIN_ARRAY) {
-			push(JsonScope.EMPTY_ARRAY);
-			pathIndices[stackSize - 1] = 0;
-			peeked = PEEKED_NONE;
-		} else {
-			throw new IllegalStateException("Expected BEGIN_ARRAY but was " + peek() + locationString());
-		}
+		return p != PEEKED_END_OBJECT && p != PEEKED_END_ARRAY;
 	}
 
-
-	public void endArray() throws IOException {
+	/**
+	 * Returns the type of the next token without consuming it.
+	 */
+	public JsonToken peek() throws IOException {
 		int p = peeked;
 		if (p == PEEKED_NONE) {
 			p = doPeek();
 		}
-		if (p == PEEKED_END_ARRAY) {
-			stackSize--;
-			pathIndices[stackSize - 1]++;
-			peeked = PEEKED_NONE;
-		} else {
-			throw new IllegalStateException("Expected END_ARRAY but was " + peek() + locationString());
+
+		switch (p) {
+		case PEEKED_BEGIN_OBJECT:
+			return JsonToken.BEGIN_OBJECT;
+		case PEEKED_END_OBJECT:
+			return JsonToken.END_OBJECT;
+		case PEEKED_BEGIN_ARRAY:
+			return JsonToken.BEGIN_ARRAY;
+		case PEEKED_END_ARRAY:
+			return JsonToken.END_ARRAY;
+		case PEEKED_SINGLE_QUOTED_NAME:
+		case PEEKED_DOUBLE_QUOTED_NAME:
+		case PEEKED_UNQUOTED_NAME:
+			return JsonToken.NAME;
+		case PEEKED_TRUE:
+		case PEEKED_FALSE:
+			return JsonToken.BOOLEAN;
+		case PEEKED_NULL:
+			return JsonToken.NULL;
+		case PEEKED_SINGLE_QUOTED:
+		case PEEKED_DOUBLE_QUOTED:
+		case PEEKED_UNQUOTED:
+		case PEEKED_BUFFERED:
+			return JsonToken.STRING;
+		case PEEKED_NUMBER:
+		case PEEKED_HEXADECIMAL:
+		case PEEKED_NaN:
+		case PEEKED_INF:
+		case PEEKED_NEGATIVE_INF:
+			return JsonToken.NUMBER;
+		case PEEKED_EOF:
+			return JsonToken.END_DOCUMENT;
+		default:
+			throw new AssertionError();
 		}
 	}
 
+	/**
+	 * Returns the next token, a {@link JsonToken#NAME property name}, and
+	 * consumes it.
+	 *
+	 * @throws java.io.IOException if the next token in the stream is not a property
+	 *     name.
+	 */
+	public String nextName() throws IOException {
+		int p = peeked;
+		if (p == PEEKED_NONE) {
+			p = doPeek();
+		}
+		String result;
+		if (p == PEEKED_UNQUOTED_NAME) {
+			result = nextUnquotedValue();
+		} else if (p == PEEKED_SINGLE_QUOTED_NAME) {
+			result = nextQuotedValue('\'');
+		} else if (p == PEEKED_DOUBLE_QUOTED_NAME) {
+			result = nextQuotedValue('"');
+		} else {
+			throw new IllegalStateException("Expected a name but was " + peek() + locationString());
+		}
+		peeked = PEEKED_NONE;
+		pathNames[stackSize - 1] = result;
+		return result;
+	}
 
+	/**
+	 * Consumes the next token from the JSON stream and asserts that it is the
+	 * beginning of a new object.
+	 */
 	public void beginObject() throws IOException {
 		int p = peeked;
 		if (p == PEEKED_NONE) {
@@ -193,7 +464,10 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 		}
 	}
 
-
+	/**
+	 * Consumes the next token from the JSON stream and asserts that it is the
+	 * end of the current object.
+	 */
 	public void endObject() throws IOException {
 		int p = peeked;
 		if (p == PEEKED_NONE) {
@@ -209,57 +483,344 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 		}
 	}
 
-
-	public boolean hasNext() throws IOException {
+	/**
+	 * Consumes the next token from the JSON stream and asserts that it is the
+	 * beginning of a new array.
+	 */
+	public void beginArray() throws IOException {
 		int p = peeked;
 		if (p == PEEKED_NONE) {
 			p = doPeek();
 		}
-		return p != PEEKED_END_OBJECT && p != PEEKED_END_ARRAY;
+		if (p == PEEKED_BEGIN_ARRAY) {
+			push(JsonScope.EMPTY_ARRAY);
+			pathIndices[stackSize - 1] = 0;
+			peeked = PEEKED_NONE;
+		} else {
+			throw new IllegalStateException("Expected BEGIN_ARRAY but was " + peek() + locationString());
+		}
 	}
 
+	/**
+	 * Consumes the next token from the JSON stream and asserts that it is the
+	 * end of the current array.
+	 */
+	public void endArray() throws IOException {
+		int p = peeked;
+		if (p == PEEKED_NONE) {
+			p = doPeek();
+		}
+		if (p == PEEKED_END_ARRAY) {
+			stackSize--;
+			pathIndices[stackSize - 1]++;
+			peeked = PEEKED_NONE;
+		} else {
+			throw new IllegalStateException("Expected END_ARRAY but was " + peek() + locationString());
+		}
+	}
 
-	public JsonToken peek() throws IOException {
+	/**
+	 * Returns the {@link JsonToken#STRING string} value of the next token,
+	 * consuming it. If the next token is a number, this method will return its
+	 * string form.
+	 *
+	 * @throws IllegalStateException if the next token is not a string or if
+	 *     this reader is closed.
+	 */
+	public String nextString() throws IOException {
+		int p = peeked;
+		if (p == PEEKED_NONE) {
+			p = doPeek();
+		}
+		String result;
+		if (p == PEEKED_UNQUOTED) {
+			result = nextUnquotedValue();
+		} else if (p == PEEKED_SINGLE_QUOTED) {
+			result = nextQuotedValue('\'');
+		} else if (p == PEEKED_DOUBLE_QUOTED) {
+			result = nextQuotedValue('"');
+		} else if (p == PEEKED_BUFFERED) {
+			result = peekedString;
+			peekedString = null;
+		}  else if (p == PEEKED_NUMBER || p == PEEKED_HEXADECIMAL || p == PEEKED_NaN || p == PEEKED_INF || p == PEEKED_NEGATIVE_INF) {
+			result = new String(buffer, pos, peekedNumberLength);
+			pos += peekedNumberLength;
+		} else {
+			throw new IllegalStateException("Expected a string but was " + peek() + locationString());
+		}
+		peeked = PEEKED_NONE;
+		pathIndices[stackSize - 1]++;
+		return result;
+	}
+
+	/**
+	 * Returns the {@link JsonToken#BOOLEAN boolean} value of the next token,
+	 * consuming it.
+	 *
+	 * @throws IllegalStateException if the next token is not a boolean or if
+	 *     this reader is closed.
+	 */
+	public boolean nextBoolean() throws IOException {
+		int p = peeked;
+		if (p == PEEKED_NONE) {
+			p = doPeek();
+		}
+		if (p == PEEKED_TRUE) {
+			peeked = PEEKED_NONE;
+			pathIndices[stackSize - 1]++;
+			return true;
+		} else if (p == PEEKED_FALSE) {
+			peeked = PEEKED_NONE;
+			pathIndices[stackSize - 1]++;
+			return false;
+		}
+		throw new IllegalStateException("Expected a boolean but was " + peek() + locationString());
+	}
+
+	/**
+	 * Returns the {@link JsonToken#NUMBER long} value of the next token,
+	 * consuming it. If the next token is a string, this method will attempt to
+	 * parse it as a long. If the next token's numeric value cannot be exactly
+	 * represented by a Java {@code long}, this method throws.
+	 *
+	 * @throws IllegalStateException if the next token is not a literal value.
+	 * @throws NumberFormatException if the next literal value cannot be parsed
+	 *     as a number, or exactly represented as a long.
+	 */
+	public Number nextNumber() throws IOException {
 		int p = peeked;
 		if (p == PEEKED_NONE) {
 			p = doPeek();
 		}
 
-		switch (p) {
-			case PEEKED_BEGIN_OBJECT:
-				return JsonToken.BEGIN_OBJECT;
-			case PEEKED_END_OBJECT:
-				return JsonToken.END_OBJECT;
-			case PEEKED_BEGIN_ARRAY:
-				return JsonToken.BEGIN_ARRAY;
-			case PEEKED_END_ARRAY:
-				return JsonToken.END_ARRAY;
-			case PEEKED_SINGLE_QUOTED_NAME:
-			case PEEKED_DOUBLE_QUOTED_NAME:
-			case PEEKED_UNQUOTED_NAME:
-				return JsonToken.NAME;
-			case PEEKED_TRUE:
-			case PEEKED_FALSE:
-				return JsonToken.BOOLEAN;
-			case PEEKED_NULL:
-				return JsonToken.NULL;
-			case PEEKED_SINGLE_QUOTED:
-			case PEEKED_DOUBLE_QUOTED:
-			case PEEKED_UNQUOTED:
-			case PEEKED_BUFFERED:
-				return JsonToken.STRING;
-			case PEEKED_NUMBER:
-			case PEEKED_HEXADECIMAL:
-			case PEEKED_NaN:
-			case PEEKED_INF:
-			case PEEKED_NEGATIVE_INF:
-				return JsonToken.NUMBER;
-			case PEEKED_EOF:
-				return JsonToken.END_DOCUMENT;
-			default:
-				throw new AssertionError();
+		boolean negateHex = false;
+		if (p == PEEKED_NUMBER) {
+			if (buffer[pos] == '+') {
+				peekedString = new String(buffer, pos + 1, peekedNumberLength - 1);
+			} else {
+				peekedString = new String(buffer, pos, peekedNumberLength);
+			}
+		} else if (p == PEEKED_HEXADECIMAL) {
+			if (buffer[pos] == '+') {
+				peekedString = new String(buffer, pos + 3, peekedNumberLength - 3);
+			} else if (buffer[pos] == '-') {
+				negateHex = true;
+				peekedString = new String(buffer, pos + 3, peekedNumberLength - 3);
+			} else {
+				peekedString = new String(buffer, pos + 2, peekedNumberLength - 2);
+			}
+		} else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_DOUBLE_QUOTED || p == PEEKED_UNQUOTED) {
+			checkLenient(); // using this to catch where this is used, TODO remove
+			if (p == PEEKED_UNQUOTED) {
+				peekedString = nextUnquotedValue();
+			} else {
+				peekedString = nextQuotedValue(p == PEEKED_SINGLE_QUOTED ? '\'' : '"');
+			}
+			try {
+				Number result = new BigInteger(peekedString);
+				peeked = PEEKED_NONE;
+				pathIndices[stackSize - 1]++;
+				pos += peekedNumberLength;
+				return result;
+			} catch (NumberFormatException ignored) {
+				// Fall back to parse as a double below.
+			}
+		} else if (p != PEEKED_NaN && p != PEEKED_INF && p != PEEKED_NEGATIVE_INF) {
+			throw new IllegalStateException("Expected a number but was " + peek() + locationString());
+		}
+
+		peeked = PEEKED_BUFFERED;
+		Number result;
+		if (p == PEEKED_HEXADECIMAL) {
+			result = new BigInteger(peekedString.toLowerCase(), 16);
+			if (negateHex) {
+				result = ((BigInteger) result).negate();
+			}
+		} else if (p == PEEKED_NaN) {
+			result = Double.NaN;
+		} else if (p == PEEKED_INF) {
+			result = Double.POSITIVE_INFINITY;
+		} else if (p == PEEKED_NEGATIVE_INF) {
+			result = Double.NEGATIVE_INFINITY;
+		} else {
+			int exp = 0;
+			try {
+				exp = Integer.parseInt(peekedString.substring('e'));
+			} catch (IndexOutOfBoundsException ignored) {
+				try {
+					exp = Integer.parseInt(peekedString.substring('E'));
+				} catch (IndexOutOfBoundsException ignored2) {
+				}
+			}
+			result = new BigDecimal(peekedString).scaleByPowerOfTen(exp);
+		}
+		peekedString = null;
+		peeked = PEEKED_NONE;
+		pathIndices[stackSize - 1]++;
+		pos += peekedNumberLength;
+		peekedNumberLength = 0;
+		return result;
+	}
+
+	/**
+	 * Returns the {@link JsonToken#NUMBER double} value of the next token,
+	 * consuming it. If the next token is a string, this method will attempt to
+	 * parse it as a double using {@link Double#parseDouble(String)}.
+	 *
+	 * @throws IllegalStateException if the next token is not a literal value.
+	 * @throws NumberFormatException if the next literal value cannot be parsed
+	 *     as a double, or is non-finite.
+	 */
+	public double nextDouble() throws IOException {
+		return nextNumber().doubleValue();
+	}
+
+	/**
+	 * Returns the {@link JsonToken#NUMBER long} value of the next token,
+	 * consuming it. If the next token is a string, this method will attempt to
+	 * parse it as a long. If the next token's numeric value cannot be exactly
+	 * represented by a Java {@code long}, this method throws.
+	 *
+	 * @throws IllegalStateException if the next token is not a literal value.
+	 * @throws NumberFormatException if the next literal value cannot be parsed
+	 *     as a number, or exactly represented as a long.
+	 */
+	public long nextLong() throws IOException {
+		Number num = nextNumber();
+		if (num instanceof BigInteger) {
+			return ((BigInteger) num).longValueExact();
+		} else {
+			return ((BigDecimal) num).longValueExact();
 		}
 	}
+
+	/**
+	 * Returns the {@link JsonToken#NUMBER int} value of the next token,
+	 * consuming it. If the next token is a string, this method will attempt to
+	 * parse it as an int. If the next token's numeric value cannot be exactly
+	 * represented by a Java {@code int}, this method throws.
+	 *
+	 * @throws IllegalStateException if the next token is not a literal value.
+	 * @throws NumberFormatException if the next literal value cannot be parsed
+	 *     as a number, or exactly represented as an int.
+	 */
+	public int nextInt() throws IOException {
+		Number num = nextNumber();
+		if (num instanceof BigInteger) {
+			return ((BigInteger) num).intValueExact();
+		} else {
+			return ((BigDecimal) num).intValueExact();
+		}
+	}
+
+	/**
+	 * Consumes the next token from the JSON stream and asserts that it is a
+	 * literal null.
+	 *
+	 * @throws IllegalStateException if the next token is not null or if this
+	 *     reader is closed.
+	 */
+	public void nextNull() throws IOException {
+		int p = peeked;
+		if (p == PEEKED_NONE) {
+			p = doPeek();
+		}
+		if (p == PEEKED_NULL) {
+			peeked = PEEKED_NONE;
+			pathIndices[stackSize - 1]++;
+		} else {
+			throw new IllegalStateException("Expected null but was " + peek() + locationString());
+		}
+	}
+
+	/**
+	 * Skips the next value recursively. If it is an object or array, all nested
+	 * elements are skipped. This method is intended for use when the JSON token
+	 * stream contains unrecognized or unhandled values.
+	 */
+	public void skipValue() throws IOException {
+		int count = 0;
+		do {
+			int p = peeked;
+			if (p == PEEKED_NONE) {
+				p = doPeek();
+			}
+
+			if (p == PEEKED_BEGIN_ARRAY) {
+				push(JsonScope.EMPTY_ARRAY);
+				count++;
+			} else if (p == PEEKED_BEGIN_OBJECT) {
+				push(JsonScope.EMPTY_OBJECT);
+				count++;
+			} else if (p == PEEKED_END_ARRAY) {
+				stackSize--;
+				count--;
+			} else if (p == PEEKED_END_OBJECT) {
+				stackSize--;
+				count--;
+			} else if (p == PEEKED_UNQUOTED_NAME || p == PEEKED_UNQUOTED) {
+				skipUnquotedValue();
+			} else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_SINGLE_QUOTED_NAME) {
+				skipQuotedValue('\'');
+			} else if (p == PEEKED_DOUBLE_QUOTED || p == PEEKED_DOUBLE_QUOTED_NAME) {
+				skipQuotedValue('"');
+			} else if (p == PEEKED_NUMBER || p == PEEKED_HEXADECIMAL || p == PEEKED_NaN || p == PEEKED_INF || p == PEEKED_NEGATIVE_INF) {
+				pos += peekedNumberLength;
+			}
+			peeked = PEEKED_NONE;
+		} while (count != 0);
+
+		pathIndices[stackSize - 1]++;
+		pathNames[stackSize - 1] = "null";
+	}
+
+	/**
+	 * @return a <a href="http://goessner.net/articles/JsonPath/">JsonPath</a> to the current location in the input JSON.
+	 */
+	public String path() {
+		StringBuilder result = new StringBuilder().append('$');
+		for (int i = 0, size = stackSize; i < size; i++) {
+			switch (stack[i]) {
+			case JsonScope.EMPTY_ARRAY:
+			case JsonScope.NONEMPTY_ARRAY:
+				result.append('[').append(pathIndices[i]).append(']');
+				break;
+
+			case JsonScope.EMPTY_OBJECT:
+			case JsonScope.DANGLING_NAME:
+			case JsonScope.NONEMPTY_OBJECT:
+				result.append('.');
+				if (pathNames[i] != null) {
+					result.append(pathNames[i]);
+				}
+				break;
+
+			case JsonScope.NONEMPTY_DOCUMENT:
+			case JsonScope.EMPTY_DOCUMENT:
+			case JsonScope.CLOSED:
+				break;
+			}
+		}
+		return result.toString();
+	}
+
+	/**
+	 * Closes this JSON reader and the underlying {@link java.io.Reader}.
+	 */
+	public void close() throws IOException {
+		peeked = PEEKED_NONE;
+		stack[0] = JsonScope.CLOSED;
+		stackSize = 1;
+		in.close();
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + locationString();
+	}
+
+	// Implementation methods
+	// Everything below here should be package-private or private
 
 	int doPeek() throws IOException {
 		int peekStack = stack[stackSize - 1];
@@ -297,15 +858,15 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 				case '"':
 					return peeked = PEEKED_DOUBLE_QUOTED_NAME;
 				case '\'':
-					checkJson5();
+					assertJson5();
 					return peeked = PEEKED_SINGLE_QUOTED_NAME;
 				case '}':
 					if (peekStack == JsonScope.NONEMPTY_OBJECT) {
-						checkJson5();
+						assertJson5();
 					}
 					return peeked = PEEKED_END_OBJECT;
 				default:
-					checkJson5(); // Unquoted names are only allowed in JSON5
+					assertJson5(); // Unquoted names are only allowed in JSON5
 					pos--; // Don't consume the first character in an unquoted string.
 					if (isLiteral((char) c)) {
 						return peeked = PEEKED_UNQUOTED_NAME;
@@ -351,13 +912,13 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 			case ']':
 				// if we're at the end of an array but we peeked a comma before, then allow only on json5
 				if (peekStack != JsonScope.EMPTY_ARRAY) {
-					checkJson5();
+					assertJson5();
 				}
 				return peeked = PEEKED_END_ARRAY;
 			case ',':
 				throw syntaxError("Unexpected value");
 			case '\'':
-				checkJson5();
+				assertJson5();
 				return peeked = PEEKED_SINGLE_QUOTED;
 			case '"':
 				return peeked = PEEKED_DOUBLE_QUOTED;
@@ -469,14 +1030,14 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 					}
 					throw syntaxError("unexpected negative sign");
 				case 'N':
-					checkJson5();
+					assertJson5();
 					if ((last == NUMBER_CHAR_NONE) && literal(buffer, p + i, "NaN", true)) {
 						peekedNumberLength = i + 3;
 						return peeked = PEEKED_NaN;
 					}
 					throw syntaxError("unexpected char N");
 				case 'I':
-					checkJson5();
+					assertJson5();
 					if ((last == NUMBER_CHAR_NONE || last == NUMBER_CHAR_SIGN) && literal(buffer, p + i, "Infinity", true)) {
 						peekedNumberLength = i + 8;
 						return peeked = last == NUMBER_CHAR_NONE ? PEEKED_INF : PEEKED_NEGATIVE_INF;
@@ -486,7 +1047,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 						last = NUMBER_CHAR_EXP_SIGN;
 						continue;
 					}
-					if (checkJson5If(last == NUMBER_CHAR_NONE)) {
+					if (isJson5(last == NUMBER_CHAR_NONE)) {
 						continue;
 					}
 					throw syntaxError("unexpected positive sign");
@@ -496,14 +1057,14 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 					if (last == NUMBER_CHAR_HEXADECIMAL) {
 						continue;
 					}
-					if (last == NUMBER_CHAR_ZERO || last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_FRACTION_DIGIT || checkJson5If(last == NUMBER_CHAR_DECIMAL)) {
+					if (last == NUMBER_CHAR_ZERO || last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_FRACTION_DIGIT || isJson5(last == NUMBER_CHAR_DECIMAL)) {
 						last = NUMBER_CHAR_EXP_E;
 						continue;
 					}
 					throw syntaxError("unexpected exponent " + c);
 
 				case '.':
-					if (last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_ZERO || checkJson5If(last == NUMBER_CHAR_NONE) || checkJson5If(last == NUMBER_CHAR_SIGN)) {
+					if (last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_ZERO || isJson5(last == NUMBER_CHAR_NONE) || isJson5(last == NUMBER_CHAR_SIGN)) {
 						last = NUMBER_CHAR_DECIMAL;
 						continue;
 					}
@@ -530,7 +1091,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 				case 'X':
 				case 'x':
 					if (last == NUMBER_CHAR_ZERO) {
-						checkJson5();
+						assertJson5();
 						last = NUMBER_CHAR_HEXADECIMAL;
 						hexadecimal = true;
 						continue;
@@ -569,7 +1130,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 		}
 		// We've read a complete number. Decide if it's a PEEKED_LONG or a PEEKED_NUMBER.
 		if (last == NUMBER_CHAR_ZERO || last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_FRACTION_DIGIT
-				|| last == NUMBER_CHAR_EXP_DIGIT || checkJson5If(last == NUMBER_CHAR_DECIMAL)) { // JSON5 allows trailing decimal
+				|| last == NUMBER_CHAR_EXP_DIGIT || isJson5(last == NUMBER_CHAR_DECIMAL)) { // JSON5 allows trailing decimal
 			peekedNumberLength = i;
 			return peeked = PEEKED_NUMBER;
 		} else {
@@ -588,6 +1149,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 
 		return !thenEnd || !isLiteral(chars[idx + text.length()]);
 	}
+
 	private boolean isLiteral(char c) throws IOException {
 		switch (c) {
 			case '/':
@@ -611,183 +1173,6 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 			default:
 				return true;
 		}
-	}
-
-
-	public String nextName() throws IOException {
-		int p = peeked;
-		if (p == PEEKED_NONE) {
-			p = doPeek();
-		}
-		String result;
-		if (p == PEEKED_UNQUOTED_NAME) {
-			result = nextUnquotedValue();
-		} else if (p == PEEKED_SINGLE_QUOTED_NAME) {
-			result = nextQuotedValue('\'');
-		} else if (p == PEEKED_DOUBLE_QUOTED_NAME) {
-			result = nextQuotedValue('"');
-		} else {
-			throw new IllegalStateException("Expected a name but was " + peek() + locationString());
-		}
-		peeked = PEEKED_NONE;
-		pathNames[stackSize - 1] = result;
-		return result;
-	}
-
-
-	public String nextString() throws IOException {
-		int p = peeked;
-		if (p == PEEKED_NONE) {
-			p = doPeek();
-		}
-		String result;
-		if (p == PEEKED_UNQUOTED) {
-			result = nextUnquotedValue();
-		} else if (p == PEEKED_SINGLE_QUOTED) {
-			result = nextQuotedValue('\'');
-		} else if (p == PEEKED_DOUBLE_QUOTED) {
-			result = nextQuotedValue('"');
-		} else if (p == PEEKED_BUFFERED) {
-			result = peekedString;
-			peekedString = null;
-		}  else if (p == PEEKED_NUMBER || p == PEEKED_HEXADECIMAL || p == PEEKED_NaN || p == PEEKED_INF || p == PEEKED_NEGATIVE_INF) {
-			result = new String(buffer, pos, peekedNumberLength);
-			pos += peekedNumberLength;
-		} else {
-			throw new IllegalStateException("Expected a string but was " + peek() + locationString());
-		}
-		peeked = PEEKED_NONE;
-		pathIndices[stackSize - 1]++;
-		return result;
-	}
-
-
-	public boolean nextBoolean() throws IOException {
-		int p = peeked;
-		if (p == PEEKED_NONE) {
-			p = doPeek();
-		}
-		if (p == PEEKED_TRUE) {
-			peeked = PEEKED_NONE;
-			pathIndices[stackSize - 1]++;
-			return true;
-		} else if (p == PEEKED_FALSE) {
-			peeked = PEEKED_NONE;
-			pathIndices[stackSize - 1]++;
-			return false;
-		}
-		throw new IllegalStateException("Expected a boolean but was " + peek() + locationString());
-	}
-
-	/**
-	 * Consumes the next token from the JSON stream and asserts that it is a
-	 * literal null.
-	 *
-	 * @throws IllegalStateException if the next token is not null or if this
-	 *     reader is closed.
-	 */
-	public void nextNull() throws IOException {
-		int p = peeked;
-		if (p == PEEKED_NONE) {
-			p = doPeek();
-		}
-		if (p == PEEKED_NULL) {
-			peeked = PEEKED_NONE;
-			pathIndices[stackSize - 1]++;
-		} else {
-			throw new IllegalStateException("Expected null but was " + peek() + locationString());
-		}
-	}
-
-
-	public double nextDouble() throws IOException {
-		return nextNumber().doubleValue();
-	}
-
-
-	public long nextLong() throws IOException {
-		Number num = nextNumber();
-		if (num instanceof BigInteger) {
-			return ((BigInteger) num).longValueExact();
-		} else {
-			return ((BigDecimal) num).longValueExact();
-		}
-	}
-
-
-	public Number nextNumber() throws IOException {
-		int p = peeked;
-		if (p == PEEKED_NONE) {
-			p = doPeek();
-		}
-
-		boolean negateHex = false;
-		if (p == PEEKED_NUMBER) {
-			if (buffer[pos] == '+') {
-				peekedString = new String(buffer, pos + 1, peekedNumberLength - 1);
-			} else {
-				peekedString = new String(buffer, pos, peekedNumberLength);
-			}
-		} else if (p == PEEKED_HEXADECIMAL) {
-			if (buffer[pos] == '+') {
-				peekedString = new String(buffer, pos + 3, peekedNumberLength - 3);
-			} else if (buffer[pos] == '-') {
-				negateHex = true;
-				peekedString = new String(buffer, pos + 3, peekedNumberLength - 3);
-			} else {
-				peekedString = new String(buffer, pos + 2, peekedNumberLength - 2);
-			}
-		} else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_DOUBLE_QUOTED || p == PEEKED_UNQUOTED) {
-			checkLenient(); // using this to catch where this is used, TODO remove
-			if (p == PEEKED_UNQUOTED) {
-				peekedString = nextUnquotedValue();
-			} else {
-				peekedString = nextQuotedValue(p == PEEKED_SINGLE_QUOTED ? '\'' : '"');
-			}
-			try {
-				Number result = new BigInteger(peekedString);
-				peeked = PEEKED_NONE;
-				pathIndices[stackSize - 1]++;
-				pos += peekedNumberLength;
-				return result;
-			} catch (NumberFormatException ignored) {
-				// Fall back to parse as a double below.
-			}
-		} else if (p != PEEKED_NaN && p != PEEKED_INF && p != PEEKED_NEGATIVE_INF) {
-			throw new IllegalStateException("Expected a number but was " + peek() + locationString());
-		}
-
-		peeked = PEEKED_BUFFERED;
-		Number result;
-		if (p == PEEKED_HEXADECIMAL) {
-			result = new BigInteger(peekedString.toLowerCase(), 16);
-			if (negateHex) {
-				result = ((BigInteger) result).negate();
-			}
-		} else if (p == PEEKED_NaN) {
-			result = Double.NaN;
-		} else if (p == PEEKED_INF) {
-			result = Double.POSITIVE_INFINITY;
-		} else if (p == PEEKED_NEGATIVE_INF) {
-			result = Double.NEGATIVE_INFINITY;
-		} else {
-			int exp = 0;
-			try {
-				 exp = Integer.parseInt(peekedString.substring('e'));
-			} catch (IndexOutOfBoundsException ignored) {
-				try {
-					exp = Integer.parseInt(peekedString.substring('E'));
-				} catch (IndexOutOfBoundsException ignored2) {
-				}
-			}
-				result = new BigDecimal(peekedString).scaleByPowerOfTen(exp);
-		}
-		peekedString = null;
-		peeked = PEEKED_NONE;
-		pathIndices[stackSize - 1]++;
-		pos += peekedNumberLength;
-		peekedNumberLength = 0;
-		return result;
 	}
 
 	/**
@@ -967,61 +1352,6 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 		} while (fillBuffer(1));
 	}
 
-
-	public int nextInt() throws IOException {
-		Number num = nextNumber();
-		if (num instanceof BigInteger) {
-			return ((BigInteger) num).intValueExact();
-		} else {
-			return ((BigDecimal) num).intValueExact();
-		}
-	}
-
-
-	public void close() throws IOException {
-		peeked = PEEKED_NONE;
-		stack[0] = JsonScope.CLOSED;
-		stackSize = 1;
-		in.close();
-	}
-
-
-	public void skipValue() throws IOException {
-		int count = 0;
-		do {
-			int p = peeked;
-			if (p == PEEKED_NONE) {
-				p = doPeek();
-			}
-
-			if (p == PEEKED_BEGIN_ARRAY) {
-				push(JsonScope.EMPTY_ARRAY);
-				count++;
-			} else if (p == PEEKED_BEGIN_OBJECT) {
-				push(JsonScope.EMPTY_OBJECT);
-				count++;
-			} else if (p == PEEKED_END_ARRAY) {
-				stackSize--;
-				count--;
-			} else if (p == PEEKED_END_OBJECT) {
-				stackSize--;
-				count--;
-			} else if (p == PEEKED_UNQUOTED_NAME || p == PEEKED_UNQUOTED) {
-				skipUnquotedValue();
-			} else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_SINGLE_QUOTED_NAME) {
-				skipQuotedValue('\'');
-			} else if (p == PEEKED_DOUBLE_QUOTED || p == PEEKED_DOUBLE_QUOTED_NAME) {
-				skipQuotedValue('"');
-			} else if (p == PEEKED_NUMBER || p == PEEKED_HEXADECIMAL || p == PEEKED_NaN || p == PEEKED_INF || p == PEEKED_NEGATIVE_INF) {
-				pos += peekedNumberLength;
-			}
-			peeked = PEEKED_NONE;
-		} while (count != 0);
-
-		pathIndices[stackSize - 1]++;
-		pathNames[stackSize - 1] = "null";
-	}
-
 	private void push(int newTop) {
 		if (stackSize == stack.length) {
 			int newLength = stackSize * 2;
@@ -1102,7 +1432,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 			} else if (c == ' ' || c == '\r' || c == '\t') {
 				continue;
 			} else if (c == 0x000b || c == 0x000C || c == 0x2028 || c == 0x2029 || c == 0xFEFF || Character.getType(c) == Character.SPACE_SEPARATOR) {
-				checkJson5();
+				assertJson5();
 				continue;
 			}
 
@@ -1118,7 +1448,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 				}
 
 				// Comments are JSON5 only
-				checkJson5();
+				assertJson5();
 				char peek = buffer[pos];
 				switch (peek) {
 					case '*':
@@ -1153,13 +1483,13 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 		}
 	}
 
-	private void checkJson5() throws IOException {
+	private void assertJson5() throws IOException {
 		if (strict) {
 			throw syntaxError("Found potentially valid JSON5, but invalid JSON while in strict mode");
 		}
 	}
 
-	private boolean checkJson5If(boolean bool) throws IOException {
+	private boolean isJson5(boolean bool) throws IOException {
 		if (bool && strict) {
 			throw syntaxError("Found potentially valid JSON5, but invalid JSON while in strict mode");
 		}
@@ -1211,42 +1541,10 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 		return false;
 	}
 
-	@Override public String toString() {
-		return getClass().getSimpleName() + locationString();
-	}
-
 	String locationString() {
 		int line = lineNumber + 1;
 		int column = pos - lineStart + 1;
-		return " at line " + line + " column " + column + " path " + getPath();
-	}
-
-
-	public String getPath() {
-		StringBuilder result = new StringBuilder().append('$');
-		for (int i = 0, size = stackSize; i < size; i++) {
-			switch (stack[i]) {
-				case JsonScope.EMPTY_ARRAY:
-				case JsonScope.NONEMPTY_ARRAY:
-					result.append('[').append(pathIndices[i]).append(']');
-					break;
-
-				case JsonScope.EMPTY_OBJECT:
-				case JsonScope.DANGLING_NAME:
-				case JsonScope.NONEMPTY_OBJECT:
-					result.append('.');
-					if (pathNames[i] != null) {
-						result.append(pathNames[i]);
-					}
-					break;
-
-				case JsonScope.NONEMPTY_DOCUMENT:
-				case JsonScope.EMPTY_DOCUMENT:
-				case JsonScope.CLOSED:
-					break;
-			}
-		}
-		return result.toString();
+		return " at line " + line + " column " + column + " path " + path();
 	}
 
 	/**
@@ -1323,7 +1621,7 @@ public class JsonStreamReaderImpl implements JsonStreamReader {
 	 * with this reader's content.
 	 */
 	private IOException syntaxError(String message) throws IOException {
-		throw new MalformedSyntaxException(message + locationString());
+		throw new MalformedSyntaxException(this, message);
 	}
 
 	/**

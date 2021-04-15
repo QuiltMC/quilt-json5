@@ -16,47 +16,56 @@
 
 package org.quiltmc.json5.test;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-import org.quiltmc.json5.api.JsonApi;
-import org.quiltmc.json5.api.stream.JsonStreamReader;
-import org.quiltmc.json5.api.visitor.JsonArrayVisitor;
-import org.quiltmc.json5.api.visitor.JsonObjectVisitor;
-import org.quiltmc.json5.api.visitor.JsonVisitor;
-import org.quiltmc.json5.api.visitor.writer.JsonWriter;
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
+import org.quiltmc.json5.exception.ParseException;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 class ReadTests {
 	@TestFactory
 	Stream<DynamicTest> validJson5() throws IOException {
-		return Files.walk(Paths.get("tests")).filter(path -> {
+		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
 			String str = path.toString();
 			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && (str.endsWith(".json") || str.endsWith(".json5"));
-		}).map(path -> DynamicTest.dynamicTest("Valid JSON5: " + path, () -> JsonApi.visit(path, new BasicVisitor())));
+		}).map(path -> DynamicTest.dynamicTest("Valid JSON5: " + path, () -> {
+			System.out.println();
+			System.out.println(path);
+			System.out.println();
+
+			try (JsonReader reader = new JsonReader(path)) {
+				read(reader);
+			}
+			// JsonApi.visit(path, new BasicVisitor());
+		}));
 	}
 
 	@TestFactory
 	Stream<DynamicTest> json5IsInvalidJson() throws IOException {
-		return Files.walk(Paths.get("tests")).filter(path -> {
+		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
 			String str = path.toString();
 			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && str.endsWith(".json5");
 		}).map(path ->
 			DynamicTest.dynamicTest("Strict: " + path, () -> {
-				JsonStreamReader reader = JsonApi.streamReader(path);
-				reader.setStrictJson();
-				try {
-					JsonApi.visit(reader, new BasicVisitor());
-				} catch (Throwable t) {
-					//TODO: make sure it's not a reading the file wrong error?
+				System.out.println();
+				System.out.println(path);
+				System.out.println();
+
+				try (JsonReader reader = new JsonReader(path)) {
+					reader.setStrictJson();
+					read(reader);
+				} catch (Throwable e) {
+					// TODO: make sure it's not a reading the file wrong error?
 					return;
 				}
+
 				throw new RuntimeException("Invalid JSON successfully parsed as strict json?");
 			})
 		);
@@ -64,13 +73,18 @@ class ReadTests {
 
 	@TestFactory
 	Stream<DynamicTest> invalidJson5() throws IOException {
-		return Files.walk(Paths.get("tests")).filter(path -> {
+		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
 			String str = path.toString();
 			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && (str.endsWith(".js") || str.endsWith(".txt"));
 		}).map(path ->
 				DynamicTest.dynamicTest("Strict: " + path, () -> {
-					try {
-						JsonApi.visit(path, new BasicVisitor());
+					System.out.println();
+					System.out.println(path);
+					System.out.println();
+
+					try (JsonReader reader = new JsonReader(path)) {
+						read(reader);
+						//JsonApi.visit(path, new BasicVisitor());
 					} catch (Throwable t) {
 						//TODO: make sure it's not a reading the file wrong error?
 					}
@@ -78,126 +92,79 @@ class ReadTests {
 		);
 	}
 
-	class BasicVisitor implements JsonVisitor {
-		@Override
-		public JsonObjectVisitor rootObject() {
-			System.out.println("\tobject");
-			return new BasicObjectVisitor(2);
-		}
+	static void read(JsonReader reader) throws IOException, ParseException {
+		innerRead(reader, 0);
 
-		@Override
-		public JsonArrayVisitor rootArray() {
-			System.out.println("\tarray");
-			return new BasicArrayVisitor(2);
-		}
-
-		@Override
-		public void rootString(String string) {
-			System.out.println("\tstring: " + string);
-		}
-
-		@Override
-		public void rootBoolean(boolean bool) {
-			System.out.println("\tboolean: " + bool);
-		}
-
-		@Override
-		public void rootNumber(Number number) {
-			System.out.println("\tnumber: " + number);
-		}
-
-		@Override
-		public void rootNull() {
-			System.out.println("\tnull");
-		}
+		// Make sure we hit end of document
+		assertEquals(reader.peek(), JsonToken.END_DOCUMENT);
 	}
 
-	class BasicObjectVisitor implements JsonObjectVisitor {
-		private final String tabs;
-		private final int indentation;
-		public BasicObjectVisitor(int indentation) {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < indentation; i++) {
-				sb.append("\t");
+	private static void innerRead(JsonReader reader, int depth) throws IOException {
+		// TODO JDK Update: We likely will not be using Java 11 for a long time in this library unlike the toolchain.
+		//  When we do move to something above 11 or above replace the stuff below with `String.repeat()`.
+
+		switch (reader.peek()) {
+		case BEGIN_ARRAY:
+			System.out.printf("%sarray%n", new String(new char[depth]).replace("\0", "\t"));
+
+			reader.beginArray();
+
+			while (reader.hasNext()) {
+				innerRead(reader, depth + 1);
 			}
-			tabs = sb.toString();
-			this.indentation = indentation;
-		}
 
-		@Override
-		public @NotNull JsonObjectVisitor visitObject(String name) {
-			System.out.println(tabs + "object: " + name);
-			return new BasicObjectVisitor(indentation + 1);
-		}
+			reader.endArray();
 
-		@Override
-		public @NotNull JsonArrayVisitor visitArray(String name) {
-			System.out.println(tabs + "array: " + name);
-			return new BasicArrayVisitor(indentation + 1);
-		}
+			System.out.printf("%sendarray%n", new String(new char[depth]).replace("\0", "\t"));
+			break;
+		case BEGIN_OBJECT:
+			System.out.printf("%sobject%n", new String(new char[depth]).replace("\0", "\t"));
 
-		@Override
-		public void visitString(String name, String value) {
-			System.out.println(tabs + "string: " + name + " " + value);
-		}
+			reader.beginObject();
 
-		@Override
-		public void visitBoolean(String name, boolean value) {
-			System.out.println(tabs + "boolean: " + name + " " + value);
-		}
+			while (reader.hasNext()) {
+				// Consume the key and print out the name of the key
+				String key = reader.nextName();
 
-		@Override
-		public void visitNumber(String name, Number value) {
-			System.out.println(tabs + "number: " + name + " " + value);
-		}
-
-		@Override
-		public void visitNull(String name) {
-			System.out.println(tabs + "null: " + name);
-		}
-	}
-
-	class BasicArrayVisitor implements JsonArrayVisitor {
-		private final String tabs;
-		private final int indentation;
-		public BasicArrayVisitor(int indentation) {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < indentation; i++) {
-				sb.append("\t");
+				System.out.printf("%s\"%s\":", new String(new char[depth]).replace("\0", "\t"), key);
+				innerRead(reader, depth + 1);
 			}
-			tabs = sb.toString();
-			this.indentation = indentation;
-		}
-		@Override
-		public @NotNull JsonObjectVisitor visitObject() {
-			System.out.println(tabs + "object");
-			return new BasicObjectVisitor(indentation + 1);
-		}
 
-		@Override
-		public @NotNull JsonArrayVisitor visitArray() {
-			System.out.println(tabs + "array");
-			return new BasicArrayVisitor(indentation + 1);
-		}
+			reader.endObject();
 
-		@Override
-		public void visitString(String string) {
-			System.out.println(tabs + "string: " + string);
-		}
+			System.out.printf("%sendobject%n", new String(new char[depth]).replace("\0", "\t"));
+			break;
+		case STRING:
+			System.out.printf("%sstring: %s%n", new String(new char[depth]).replace("\0", "\t"), reader.nextString());
 
-		@Override
-		public void visitBoolean(boolean bool) {
-			System.out.println(tabs + "boolean: " + bool);
-		}
+			break;
+		case NUMBER:
+			System.out.printf("%snumber: %s%n", new String(new char[depth]).replace("\0", "\t"), reader.nextNumber());
 
-		@Override
-		public void visitNumber(Number number) {
-			System.out.println(tabs + "number: " + number);
-		}
+			break;
+		case BOOLEAN:
+			System.out.printf("%sboolean: %s%n", new String(new char[depth]).replace("\0", "\t"), reader.nextBoolean());
 
-		@Override
-		public void visitNull() {
-			System.out.println(tabs + "null");
+			break;
+		case NULL:
+			// Consume the null
+			reader.nextNull();
+			System.out.printf("%snull%n", new String(new char[depth]).replace("\0", "\t"));
+
+			break;
+		// End of elements, we will not reach these ever.
+		case END_ARRAY:
+		case END_OBJECT:
+			throw new AssertionError("Reader reached invalid state?");
+		case END_DOCUMENT:
+			if (depth != 0) {
+				throw new ParseException("Hit invalid end of document.");
+			}
+
+			break;
+		case NAME:
+			// Invalid
+			throw new ParseException("Invalid name entry");
 		}
 	}
 }
