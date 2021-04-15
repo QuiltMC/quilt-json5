@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api;
+package org.quiltmc.json5;
 
-import org.quiltmc.json5.api.exception.MalformedSyntaxException;
+import org.quiltmc.json5.exception.MalformedSyntaxException;
 
 import java.io.Closeable;
 import java.io.EOFException;

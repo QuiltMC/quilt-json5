@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api;
+package org.quiltmc.json5;
 
-import org.quiltmc.json5.api.exception.ParseException;
+import org.quiltmc.json5.exception.ParseException;
 
 import java.io.IOException;
 import java.nio.file.Files;

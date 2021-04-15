@@ -18,7 +18,7 @@ package org.quiltmc.json5.test;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.quiltmc.json5.api.JsonWriter;
+import org.quiltmc.json5.JsonWriter;
 
 import java.io.IOException;
 import java.io.StringWriter;

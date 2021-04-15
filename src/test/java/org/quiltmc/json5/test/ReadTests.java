@@ -18,9 +18,9 @@ package org.quiltmc.json5.test;
 
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
-import org.quiltmc.json5.api.JsonReader;
-import org.quiltmc.json5.api.JsonToken;
-import org.quiltmc.json5.api.exception.ParseException;
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
+import org.quiltmc.json5.exception.ParseException;
 
 import java.io.IOException;
 import java.nio.file.Files;

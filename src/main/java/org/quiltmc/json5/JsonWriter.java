@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api;
+package org.quiltmc.json5;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -27,13 +27,13 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static org.quiltmc.json5.api.JsonScope.DANGLING_NAME;
-import static org.quiltmc.json5.api.JsonScope.EMPTY_ARRAY;
-import static org.quiltmc.json5.api.JsonScope.EMPTY_DOCUMENT;
-import static org.quiltmc.json5.api.JsonScope.EMPTY_OBJECT;
-import static org.quiltmc.json5.api.JsonScope.NONEMPTY_ARRAY;
-import static org.quiltmc.json5.api.JsonScope.NONEMPTY_DOCUMENT;
-import static org.quiltmc.json5.api.JsonScope.NONEMPTY_OBJECT;
+import static org.quiltmc.json5.JsonScope.DANGLING_NAME;
+import static org.quiltmc.json5.JsonScope.EMPTY_ARRAY;
+import static org.quiltmc.json5.JsonScope.EMPTY_DOCUMENT;
+import static org.quiltmc.json5.JsonScope.EMPTY_OBJECT;
+import static org.quiltmc.json5.JsonScope.NONEMPTY_ARRAY;
+import static org.quiltmc.json5.JsonScope.NONEMPTY_DOCUMENT;
+import static org.quiltmc.json5.JsonScope.NONEMPTY_OBJECT;
 
 /*
  * Gson is Copyright (C) 2010 Google Inc, under the Apache License Version 2.0 (the same as in the header above).

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api.exception;
+package org.quiltmc.json5.exception;
 
-import org.quiltmc.json5.api.JsonReader;
+import org.quiltmc.json5.JsonReader;
 
 public class FormatViolationException extends ParseException {
 	public FormatViolationException() {

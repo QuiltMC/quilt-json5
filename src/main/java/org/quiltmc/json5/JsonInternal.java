@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api;
+package org.quiltmc.json5;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.api.exception.MalformedSyntaxException;
+import org.quiltmc.json5.exception.MalformedSyntaxException;
 
 /**
  * Utility class to hold methods considered as part of implementation detail.

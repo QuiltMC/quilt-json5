@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.json5.api;
+package org.quiltmc.json5;
 
 /*
  * This is a carbon-copy of Gson's JsonToken.
