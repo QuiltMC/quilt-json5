@@ -213,7 +213,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * Creates a new instance that writes a JSON5-encoded stream.
 	 */
 	public static JsonWriter create(Path out) throws IOException {
-		return new JsonWriter(out);
+		return create(Files.newBufferedWriter(Objects.requireNonNull(out, "Path cannot be null")));
 	}
 
 	/**
@@ -230,7 +230,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * This disables NaN, (+/-)Infinity, and comments, and enables quotes around keys.
 	 */
 	public static JsonWriter createStrict(Path out) throws IOException {
-		return new JsonWriter(out).setStrictJson();
+		return create(out).setStrictJson();
 	}
 
 	/**
@@ -240,11 +240,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
 	 */
 	public static JsonWriter createStrict(Writer out) {
-		return new JsonWriter(out).setStrictJson();
-	}
-
-	private JsonWriter(Path path) throws IOException {
-		this(Files.newBufferedWriter(Objects.requireNonNull(path, "Path cannot be null")));
+		return create(out).setStrictJson();
 	}
 
 	private JsonWriter(Writer out) {

@@ -303,14 +303,14 @@ public final class JsonReader implements Closeable {
 	 * @throws IOException if an I/O error occurs trying to open the file at the path.
 	 */
 	public static JsonReader create(Path in) throws IOException {
-		return new JsonReader(in);
+		return create(Files.newBufferedReader(Objects.requireNonNull(in, "Path cannot be null")));
 	}
 
 	/**
 	 * Creates a new instance that reads a JSON5-encoded stream from the provided string.
 	 */
 	public static JsonReader create(String in) {
-		return new JsonReader(in);
+		return create(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")));
 	}
 
 	/**
@@ -324,29 +324,21 @@ public final class JsonReader implements Closeable {
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Path.
 	 */
 	public static JsonReader createStrict(Path in) throws IOException {
-		return new JsonReader(in).setStrictJson();
+		return create(in).setStrictJson();
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided string.
 	 */
 	public static JsonReader createStrict(String in) {
-		return new JsonReader(in).setStrictJson();
+		return create(in).setStrictJson();
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Reader.
 	 */
 	public static JsonReader createStrict(Reader in) {
-		return new JsonReader(in).setStrictJson();
-	}
-
-	private JsonReader(Path path) throws IOException {
-		this(Files.newBufferedReader(Objects.requireNonNull(path, "Path cannot be null")));
-	}
-
-	private JsonReader(String in) {
-		this(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")));
+		return create(in).setStrictJson();
 	}
 
 	private JsonReader(Reader in) {
