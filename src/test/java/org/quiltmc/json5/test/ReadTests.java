@@ -40,7 +40,7 @@ class ReadTests {
 			System.out.println(path);
 			System.out.println();
 
-			try (JsonReader reader = new JsonReader(path)) {
+			try (JsonReader reader = JsonReader.create(path)) {
 				read(reader);
 			}
 			// JsonApi.visit(path, new BasicVisitor());
@@ -58,8 +58,7 @@ class ReadTests {
 				System.out.println(path);
 				System.out.println();
 
-				try (JsonReader reader = new JsonReader(path)) {
-					reader.setStrictJson();
+				try (JsonReader reader = JsonReader.createStrict(path)) {
 					read(reader);
 				} catch (Throwable e) {
 					// TODO: make sure it's not a reading the file wrong error?
@@ -82,9 +81,8 @@ class ReadTests {
 					System.out.println(path);
 					System.out.println();
 
-					try (JsonReader reader = new JsonReader(path)) {
+					try (JsonReader reader = JsonReader.create(path)) {
 						read(reader);
-						//JsonApi.visit(path, new BasicVisitor());
 					} catch (Throwable t) {
 						//TODO: make sure it's not a reading the file wrong error?
 					}

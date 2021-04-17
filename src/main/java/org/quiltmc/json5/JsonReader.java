@@ -361,7 +361,7 @@ public final class JsonReader implements Closeable {
 	 * Disables JSON5-specific features. This includes, but is not limited to: comments, lack of quotes around object keys,
 	 * trailing commas, hexadecimal numbers, and enhanced floating point numbers.
 	 */
-	private JsonReader setStrictJson() {
+	public JsonReader setStrictJson() {
 		this.strict = true;
 		return this;
 	}

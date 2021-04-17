@@ -18,10 +18,7 @@ package org.quiltmc.json5;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
-import java.io.Flushable;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -213,22 +210,44 @@ public final class JsonWriter implements Closeable, Flushable {
 	// API methods
 
 	/**
-	 * Creates a new instance that writes a JSON-encoded stream to {@code path}.
-	 * The caller must ensure the file at {@code path} exists.
-	 *
-	 * @param path path to read JSON to.
-	 * @throws IOException if an I/O error occurs trying to open the file at the path.
+	 * Creates a new instance that writes a JSON5-encoded stream.
 	 */
-	public JsonWriter(Path path) throws IOException {
-		this(Files.newBufferedWriter(Objects.requireNonNull(path, "Path cannot be null")));
+	public static JsonWriter create(Path out) throws IOException {
+		return new JsonWriter(out);
 	}
 
 	/**
-	 * Creates a new instance that writes a JSON-encoded stream to {@code out}.
+	 * Creates a new instance that writes a JSON5-encoded stream to {@code out}.
 	 * For best performance, ensure {@link Writer} is buffered; wrapping in
 	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
 	 */
-	public JsonWriter(Writer out) {
+	public static JsonWriter create(Writer out) {
+		return new JsonWriter(out);
+	}
+
+	/**
+	 * Creates a new instance that writes a strictly JSON-encoded stream.
+	 * This disables NaN, (+/-)Infinity, and comments, and enables quotes around keys.
+	 */
+	public static JsonWriter createStrict(Path out) throws IOException {
+		return new JsonWriter(out).setStrictJson();
+	}
+
+	/**
+	 * Creates a new instance that writes a strictly JSON-encoded stream to {@code out}.
+	 * This disables NaN, (+/-)Infinity, and comments, and enables quotes around keys.
+	 * For best performance, ensure {@link Writer} is buffered; wrapping in
+	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
+	 */
+	public static JsonWriter createStrict(Writer out) {
+		return new JsonWriter(out).setStrictJson();
+	}
+
+	private JsonWriter(Path path) throws IOException {
+		this(Files.newBufferedWriter(Objects.requireNonNull(path, "Path cannot be null")));
+	}
+
+	private JsonWriter(Writer out) {
 		if (out == null) {
 			throw new NullPointerException("out == null");
 		}
@@ -256,17 +275,17 @@ public final class JsonWriter implements Closeable, Flushable {
 	}
 
 	/**
-	 * Configure if the output must be strict JSON, instead of strict JSON5. This flag disables NaN, (+/-)Infinity, quotes around keys, and comments.
-	 * The default is false.
+	 * Configure if the output must be strict JSON, instead of strict JSON5. This flag disables NaN, (+/-)Infinity, comments, and enables quotes around keys.
 	 */
-	public void setStrict(boolean strict) {
-		this.strict = strict;
+	public JsonWriter setStrictJson() {
+		this.strict = true;
+		return this;
 	}
 
 	/**
 	 * Returns true if the output must be strict JSON, instead of strict JSON5. The default is false.
 	 */
-	public boolean isStrict() {
+	public boolean isStrictJson() {
 		return strict;
 	}
 

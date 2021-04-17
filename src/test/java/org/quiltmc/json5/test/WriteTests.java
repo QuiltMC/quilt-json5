@@ -28,7 +28,7 @@ class WriteTests {
 	void write() throws IOException {
 		StringWriter w = new StringWriter();
 
-		try (JsonWriter writer = new JsonWriter(w)) {
+		try (JsonWriter writer = JsonWriter.create(w)) {
 			sampleWrite(writer);
 			// Yes you should flush your writers, but string writer does not need it.
 			// writer.flush();
@@ -43,8 +43,7 @@ class WriteTests {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			StringWriter w = new StringWriter();
 
-			try (JsonWriter writer = new JsonWriter(w)) {
-				writer.setStrict(true);
+			try (JsonWriter writer = JsonWriter.createStrict(w)) {
 				sampleWrite(writer);
 				// Yes you should flush your writers, but string writer does not need it.
 				// writer.flush();
@@ -55,10 +54,10 @@ class WriteTests {
 	}
 
 	@Test
-	void writeCompat() throws IOException {
+	void writeCompact() throws IOException {
 		StringWriter w = new StringWriter();
 
-		try (JsonWriter writer = new JsonWriter(w)) {
+		try (JsonWriter writer = JsonWriter.create(w)) {
 			writer.setCompact();
 			sampleWrite(writer);
 			// Yes you should flush your writers, but string writer does not need it.
@@ -79,8 +78,7 @@ class WriteTests {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			StringWriter w = new StringWriter();
 
-			try (JsonWriter writer = new JsonWriter(w)) {
-				writer.setStrict(true);
+			try (JsonWriter writer = JsonWriter.createStrict(w)) {
 				writer.setCompact();
 				sampleWrite(writer);
 				// Yes you should flush your writers, but string writer does not need it.
