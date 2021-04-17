@@ -202,7 +202,7 @@ import java.util.Objects;
  * <p>Prefixing JSON files with <code>")]}'\n"</code> makes them non-executable
  * by {@code <script>} tags, disarming the attack. Since the prefix is malformed
  * JSON, strict parsing fails when it is encountered. This class permits the
- * non-execute prefix unless {@link #disallowNonExecutePrefix()} is
+ * non-execute prefix unless {@link #allowNonExecutePrefix()} is
  * called before parsing occurs.
  *
  * <p>Each {@code JsonReader} may be used to read a single JSON stream. Instances
@@ -246,7 +246,7 @@ public final class JsonReader implements Closeable {
 	/** The input JSON. */
 	private final Reader in;
 
-	private boolean allowNonExecutePrefix = true;
+	private boolean allowNonExecutePrefix = false;
 	private boolean strict = false;
 	/**
 	 * Use a manual buffer to easily read and unread upcoming characters, and
@@ -296,32 +296,60 @@ public final class JsonReader implements Closeable {
 	private int[] pathIndices = new int[32];
 
 	// API methods
-
 	/**
-	 * Creates a new instance that reads a JSON-encoded stream from the provided path.
+	 * Creates a new instance that reads a JSON5-encoded stream from the provided path.
 	 *
-	 * @param path path to read JSON from.
+	 * @param in path to read JSON from.
 	 * @throws IOException if an I/O error occurs trying to open the file at the path.
 	 */
-	public JsonReader(Path path) throws IOException {
+	public static JsonReader create(Path in) throws IOException {
+		return new JsonReader(in);
+	}
+
+	/**
+	 * Creates a new instance that reads a JSON5-encoded stream from the provided string.
+	 */
+	public static JsonReader create(String in) {
+		return new JsonReader(in);
+	}
+
+	/**
+	 * Creates a new instance that reads a JSON5-encoded stream from the provided Reader.
+	 */
+	public static JsonReader create(Reader in) {
+		return new JsonReader(in);
+	}
+
+	/**
+	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Path.
+	 */
+	public static JsonReader createStrict(Path in) throws IOException {
+		return new JsonReader(in).setStrictJson();
+	}
+
+	/**
+	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided string.
+	 */
+	public static JsonReader createStrict(String in) {
+		return new JsonReader(in).setStrictJson();
+	}
+
+	/**
+	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Reader.
+	 */
+	public static JsonReader createStrict(Reader in) {
+		return new JsonReader(in).setStrictJson();
+	}
+
+	private JsonReader(Path path) throws IOException {
 		this(Files.newBufferedReader(Objects.requireNonNull(path, "Path cannot be null")));
 	}
 
-	/**
-	 * Creates a new instance that reads a JSON-encoded stream from the provided string.
-	 *
-	 * <p>This is equivalent to passing a {@link StringReader} into {@link JsonReader#JsonReader(Reader)}.
-	 *
-	 * @param in the string to read JSON from.
-	 */
-	public JsonReader(String in) {
+	private JsonReader(String in) {
 		this(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")));
 	}
 
-	/**
-	 * Creates a new instance that reads a JSON-encoded stream from {@code in}.
-	 */
-	public JsonReader(Reader in) {
+	private JsonReader(Reader in) {
 		if (in == null) {
 			throw new NullPointerException("in == null");
 		}
@@ -333,8 +361,9 @@ public final class JsonReader implements Closeable {
 	 * Disables JSON5-specific features. This includes, but is not limited to: comments, lack of quotes around object keys,
 	 * trailing commas, hexadecimal numbers, and enhanced floating point numbers.
 	 */
-	public void setStrictJson() {
+	private JsonReader setStrictJson() {
 		this.strict = true;
+		return this;
 	}
 
 	/**
@@ -352,12 +381,12 @@ public final class JsonReader implements Closeable {
 	 *
 	 * <p>Prefixing JSON files with <code>")]}'\n"</code> makes them non-executable
 	 * by {@code <script>} tags, disarming the attack. Since the prefix is malformed
-	 * JSON, strict parsing fails when it is encountered. This class permits the
-	 * non-execute prefix unless {@link #disallowNonExecutePrefix()} is
+	 * JSON, strict parsing fails when it is encountered. This class disables the
+	 * non-execute prefix unless {@link #allowNonExecutePrefix()} is
 	 * called before parsing occurs.
 	 */
-	public void disallowNonExecutePrefix() {
-		this.allowNonExecutePrefix = false;
+	public void allowNonExecutePrefix() {
+		this.allowNonExecutePrefix = true;
 	}
 
 	/**
