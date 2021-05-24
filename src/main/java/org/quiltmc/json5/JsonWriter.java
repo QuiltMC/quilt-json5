@@ -212,8 +212,8 @@ public final class JsonWriter implements Closeable, Flushable {
 	/**
 	 * Creates a new instance that writes a JSON5-encoded stream.
 	 */
-	public static JsonWriter create(Path out) throws IOException {
-		return create(Files.newBufferedWriter(Objects.requireNonNull(out, "Path cannot be null")));
+	public static JsonWriter json5(Path out) throws IOException {
+		return json5(Files.newBufferedWriter(Objects.requireNonNull(out, "Path cannot be null")));
 	}
 
 	/**
@@ -221,7 +221,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * For best performance, ensure {@link Writer} is buffered; wrapping in
 	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
 	 */
-	public static JsonWriter create(Writer out) {
+	public static JsonWriter json5(Writer out) {
 		return new JsonWriter(out);
 	}
 
@@ -229,8 +229,8 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * Creates a new instance that writes a strictly JSON-encoded stream.
 	 * This disables NaN, (+/-)Infinity, and comments, and enables quotes around keys.
 	 */
-	public static JsonWriter createStrict(Path out) throws IOException {
-		return create(out).setStrictJson();
+	public static JsonWriter json(Path out) throws IOException {
+		return json5(out).setStrictJson();
 	}
 
 	/**
@@ -239,8 +239,8 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * For best performance, ensure {@link Writer} is buffered; wrapping in
 	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
 	 */
-	public static JsonWriter createStrict(Writer out) {
-		return create(out).setStrictJson();
+	public static JsonWriter json(Writer out) {
+		return json5(out).setStrictJson();
 	}
 
 	private JsonWriter(Writer out) {

@@ -302,43 +302,43 @@ public final class JsonReader implements Closeable {
 	 * @param in path to read JSON from.
 	 * @throws IOException if an I/O error occurs trying to open the file at the path.
 	 */
-	public static JsonReader create(Path in) throws IOException {
-		return create(Files.newBufferedReader(Objects.requireNonNull(in, "Path cannot be null")));
+	public static JsonReader json5(Path in) throws IOException {
+		return json5(Files.newBufferedReader(Objects.requireNonNull(in, "Path cannot be null")));
 	}
 
 	/**
 	 * Creates a new instance that reads a JSON5-encoded stream from the provided string.
 	 */
-	public static JsonReader create(String in) {
-		return create(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")));
+	public static JsonReader json5(String in) {
+		return json5(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")));
 	}
 
 	/**
 	 * Creates a new instance that reads a JSON5-encoded stream from the provided Reader.
 	 */
-	public static JsonReader create(Reader in) {
+	public static JsonReader json5(Reader in) {
 		return new JsonReader(in);
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Path.
 	 */
-	public static JsonReader createStrict(Path in) throws IOException {
-		return create(in).setStrictJson();
+	public static JsonReader json(Path in) throws IOException {
+		return json5(in).setStrictJson();
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided string.
 	 */
-	public static JsonReader createStrict(String in) {
-		return create(in).setStrictJson();
+	public static JsonReader json(String in) {
+		return json5(in).setStrictJson();
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Reader.
 	 */
-	public static JsonReader createStrict(Reader in) {
-		return create(in).setStrictJson();
+	public static JsonReader json(Reader in) {
+		return json5(in).setStrictJson();
 	}
 
 	private JsonReader(Reader in) {
