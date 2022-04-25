@@ -351,6 +351,9 @@ public final class JsonWriter implements Closeable, Flushable {
 		if (stackSize == 0) {
 			throw new IllegalStateException("JsonWriter is closed.");
 		}
+		if (name.contains(" ")) {
+			name = '"' + name + '"';
+		}
 		deferredName = name;
 		return this;
 	}

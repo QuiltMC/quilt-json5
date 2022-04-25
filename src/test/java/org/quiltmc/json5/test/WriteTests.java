@@ -105,6 +105,7 @@ class WriteTests {
 					.comment("Surprise! Another value approaches!")
 					.name("another_value").value("chicken nuggets")
 					.comment("Wow this sure is a lot of comments huh")
+					.name("test name with spaces").value(0L)
 				.endObject()
 				.comment("Glad that's over.");
 	}
