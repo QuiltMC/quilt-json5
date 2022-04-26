@@ -647,7 +647,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	private void writeDeferredName() throws IOException {
 		if (deferredName != null) {
 			beforeName();
-			string(deferredName, strict, true);
+			string(deferredName, strict || deferredName.contains(" "), true);
 			deferredName = null;
 		}
 	}
