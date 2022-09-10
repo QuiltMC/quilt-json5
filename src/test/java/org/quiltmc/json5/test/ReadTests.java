@@ -48,6 +48,23 @@ class ReadTests {
 	}
 
 	@TestFactory
+	Stream<DynamicTest> validStrictJson() throws IOException {
+		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
+			String str = path.toString();
+			return !Files.isDirectory(path) && !str.startsWith("json5-tests/.") && (str.endsWith(".json"));
+		}).map(path -> DynamicTest.dynamicTest("Valid JSON: " + path, () -> {
+			System.out.println();
+			System.out.println(path);
+			System.out.println();
+
+			try (JsonReader reader = JsonReader.json(path)) {
+				read(reader);
+			}
+			// JsonApi.visit(path, new BasicVisitor());
+		}));
+	}
+
+	@TestFactory
 	Stream<DynamicTest> json5IsInvalidJson() throws IOException {
 		return Files.walk(Paths.get("tests").resolve("json5-tests")).filter(path -> {
 			String str = path.toString();
