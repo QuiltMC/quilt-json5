@@ -35,9 +35,10 @@ import static org.quiltmc.json5.JsonScope.NONEMPTY_OBJECT;
 /*
  * Gson is Copyright (C) 2010 Google Inc, under the Apache License Version 2.0 (the same as in the header above).
  *
- * The following changes have bee applied:
+ * The following changes have been applied:
  * - The lenient mode has been replaced with a json5 mode, which only writes strict json5.
  * - A strict JSON only mode has been added which will only write valid JSON.
+ * - A JSONC mode has been added which allows comments, but none of the extra features of JSON5
  * - Writer changes to handle JSON5 syntax extensions.
  * - Add ability to write comments into the writer.
  * - Repackaged.
@@ -201,8 +202,11 @@ public final class JsonWriter implements Closeable, Flushable {
 
 	private String deferredComment;
 	boolean inlineWaited = false;
-	private boolean strict = false;
 
+	private static final int MODE_STRICT_JSON = 0;
+	private static final int MODE_JSONC = 1;
+	private static final int MODE_JSON5 = 2;
+	private int mode;
 	private boolean compact = false;
 
 	private boolean serializeNulls = true;
@@ -213,7 +217,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * Creates a new instance that writes a JSON5-encoded stream.
 	 */
 	public static JsonWriter json5(Path out) throws IOException {
-		return json5(Files.newBufferedWriter(Objects.requireNonNull(out, "Path cannot be null")));
+		return new JsonWriter(out, MODE_JSON5);
 	}
 
 	/**
@@ -222,15 +226,33 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
 	 */
 	public static JsonWriter json5(Writer out) {
-		return new JsonWriter(out);
+		return new JsonWriter(out, MODE_JSON5);
+	}
+
+	 /**
+	 * Creates a new instance that writes a strictly JSON-encoded stream.
+	 * This disables float features like Nan and Infinity and adds quotes around keys, but allows comments.
+	 */
+	public static JsonWriter jsonc(Path out) throws IOException {
+		return new JsonWriter(out, MODE_JSONC);
 	}
 
 	/**
-	 * Creates a new instance that writes a strictly JSON-encoded stream.
+	 * Creates a new instance that writes a strictly JSON-encoded stream to {@code out}.
+	 * This disables float features like Nan and Infinity and adds quotes around keys, but allows comments.
+	 * For best performance, ensure {@link Writer} is buffered; wrapping in
+	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
+	 */
+	public static JsonWriter jsonc(Writer out) {
+		return new JsonWriter(out, MODE_JSONC);
+	}
+
+	/**
+	* Creates a new instance that writes a strictly JSON-encoded stream.
 	 * This disables NaN, (+/-)Infinity, and comments, and enables quotes around keys.
 	 */
 	public static JsonWriter json(Path out) throws IOException {
-		return json5(out).setStrictJson();
+		return new JsonWriter(out, MODE_STRICT_JSON);
 	}
 
 	/**
@@ -240,14 +262,25 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * {@link java.io.BufferedWriter BufferedWriter} if necessary.
 	 */
 	public static JsonWriter json(Writer out) {
-		return json5(out).setStrictJson();
+		return new JsonWriter(out, MODE_STRICT_JSON);
 	}
 
-	private JsonWriter(Writer out) {
-		if (out == null) {
-			throw new NullPointerException("out == null");
+
+
+	private JsonWriter(Path out, int mode) throws IOException {
+		this(Files.newBufferedWriter(Objects.requireNonNull(out, "Path cannot be null")), mode);
+	}
+
+
+	private JsonWriter(Writer out, int mode) {
+		Objects.requireNonNull(out, "Writer must not be null");
+		if (mode != MODE_JSON5 && mode != MODE_STRICT_JSON && mode != MODE_JSONC) {
+			throw new IllegalArgumentException("Unknown mode " + mode + "! How did we get here?");
 		}
+
+
 		this.out = out;
+		this.mode = mode;
 	}
 
 	/**
@@ -272,17 +305,19 @@ public final class JsonWriter implements Closeable, Flushable {
 
 	/**
 	 * Configure if the output must be strict JSON, instead of strict JSON5. This flag disables NaN, (+/-)Infinity, comments, and enables quotes around keys.
+	 * @deprecated Avoid changing the mode of the output after construction.
 	 */
+	@Deprecated
 	public JsonWriter setStrictJson() {
-		this.strict = true;
 		return this;
 	}
 
 	/**
 	 * Returns true if the output must be strict JSON, instead of strict JSON5. The default is false.
 	 */
+	@Deprecated
 	public boolean isStrictJson() {
-		return strict;
+		return this.mode == MODE_STRICT_JSON;
 	}
 
 	/**
@@ -452,7 +487,7 @@ public final class JsonWriter implements Closeable, Flushable {
 
 		writeDeferredName();
 		String string = value.toString();
-		if (strict && (string.equals("-Infinity") || string.equals("Infinity") || string.equals("NaN"))) {
+		if (mode != MODE_JSON5 && (string.equals("-Infinity") || string.equals("Infinity") || string.equals("NaN"))) {
 			throw new IllegalArgumentException("Numeric values must be finite, but was " + value);
 		}
 		beforeValue();
@@ -469,7 +504,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	 */
 	public JsonWriter value(double value) throws IOException {
 		writeDeferredName();
-		if (strict && (Double.isNaN(value) || Double.isInfinite(value))) {
+		if (mode != MODE_JSON5 && (Double.isNaN(value) || Double.isInfinite(value))) {
 			throw new IllegalArgumentException("Numeric values must be finite, but was " + value);
 		}
 		beforeValue();
@@ -531,7 +566,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	 * @param comment the comment to write, or null to encode nothing.
 	 */
 	public JsonWriter comment(String comment) throws IOException {
-		if (compact || strict || comment == null) {
+		if (compact || mode == MODE_STRICT_JSON || comment == null) {
 			return this;
 		}
 
@@ -647,7 +682,7 @@ public final class JsonWriter implements Closeable, Flushable {
 	private void writeDeferredName() throws IOException {
 		if (deferredName != null) {
 			beforeName();
-			string(deferredName, strict || deferredName.contains(" "), true);
+			string(deferredName, mode == MODE_STRICT_JSON || deferredName.contains(" "), true);
 			deferredName = null;
 		}
 	}

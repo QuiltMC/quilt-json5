@@ -34,8 +34,9 @@ import java.util.Objects;
  * Gson is Copyright (C) 2010 Google Inc, under the Apache License Version 2.0 (the same as in the header above).
  *
  * The following changes have been applied:
- * - The lenient mode has been replaced with a json5 mode, which only parses strict json5.
+ * - The lenient mode has been replaced with a JSON5 mode, which only parses JSON5 (features exclusive to GSON were removed).
  * - A strict JSON only mode has been added which will only parse valid JSON.
+ * - A JSONC mode has been added which allows comments, but none of the extra features of JSON5
  * - Parser changes to handle JSON5 syntax extensions.
  * - Repackaged.
  * - Other minor code style changes.
@@ -45,7 +46,8 @@ import java.util.Objects;
  */
 
 /**
- * Reads <a href="https://json5.org/"> JSON5</a> or strict JSON (<a href="http://www.ietf.org/rfc/rfc7159.txt">RFC 7159</a>)
+ * Reads a <a href="https://json5.org/"> JSON5</a>, strict JSON (<a href="http://www.ietf.org/rfc/rfc7159.txt">RFC 7159</a>),
+ * or JSONC (json with Javascript-style comments)
  * encoded value as a stream of tokens. This stream includes both literal
  * values (strings, numbers, booleans, and nulls) as well as the begin and
  * end delimiters of objects and arrays. The tokens are traversed in
@@ -243,11 +245,16 @@ public final class JsonReader implements Closeable {
 	private static final int NUMBER_CHAR_EXP_DIGIT = 7;
 	private static final int NUMBER_CHAR_ZERO = 8;
 	private static final int NUMBER_CHAR_HEXADECIMAL = 9;
+
+	private static final int MODE_STRICT_JSON = 0;
+	private static final int MODE_JSONC = 1;
+	private static final int MODE_JSON5 = 2;
+
 	/** The input JSON. */
 	private final Reader in;
 
 	private boolean allowNonExecutePrefix = false;
-	private boolean strict = false;
+	private int mode;
 	/**
 	 * Use a manual buffer to easily read and unread upcoming characters, and
 	 * also so we can create strings without an intermediate StringBuilder.
@@ -303,66 +310,106 @@ public final class JsonReader implements Closeable {
 	 * @throws IOException if an I/O error occurs trying to open the file at the path.
 	 */
 	public static JsonReader json5(Path in) throws IOException {
-		return json5(Files.newBufferedReader(Objects.requireNonNull(in, "Path cannot be null")));
+		return new JsonReader(in, MODE_JSON5);
 	}
 
 	/**
 	 * Creates a new instance that reads a JSON5-encoded stream from the provided string.
 	 */
 	public static JsonReader json5(String in) {
-		return json5(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")));
+		return new JsonReader(in, MODE_JSON5);
 	}
 
 	/**
 	 * Creates a new instance that reads a JSON5-encoded stream from the provided Reader.
 	 */
 	public static JsonReader json5(Reader in) {
-		return new JsonReader(in);
+		return new JsonReader(in, MODE_JSON5);
+	}
+
+	/**
+	 * Creates a new instance that reads a JSONC-encoded stream from the provided path.
+	 *
+	 * @param in path to read JSON from.
+	 * @throws IOException if an I/O error occurs trying to open the file at the path.
+	 */
+	public static JsonReader jsonc(Path in) throws IOException {
+		return new JsonReader(in, MODE_JSONC);
+	}
+
+	/**
+	 * Creates a new instance that reads a JSON5-encoded stream from the provided string.
+	 */
+	public static JsonReader jsonc(String in) {
+		return new JsonReader(in, MODE_JSONC);
+	}
+
+	/**
+	 * Creates a new instance that reads a JSON5-encoded stream from the provided Reader.
+	 */
+	public static JsonReader jsonc(Reader in) {
+		return new JsonReader(in, MODE_JSONC);
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Path.
 	 */
 	public static JsonReader json(Path in) throws IOException {
-		return json5(in).setStrictJson();
+		return new JsonReader(in, MODE_STRICT_JSON);
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided string.
 	 */
 	public static JsonReader json(String in) {
-		return json5(in).setStrictJson();
+		return new JsonReader(in, MODE_STRICT_JSON);
+
 	}
 
 	/**
 	 * Creates a new instance that reads a strictly JSON-encoded stream from the provided Reader.
 	 */
 	public static JsonReader json(Reader in) {
-		return json5(in).setStrictJson();
+		return new JsonReader(in, MODE_STRICT_JSON);
 	}
 
-	private JsonReader(Reader in) {
+	private JsonReader(String in, int mode) {
+		this(new StringReader(Objects.requireNonNull(in, "Input string cannot be null")), mode);
+	}
+
+	private JsonReader(Path in, int mode) throws IOException {
+		this(Files.newBufferedReader(Objects.requireNonNull(in, "Path cannot be null")), mode);
+	}
+
+	private JsonReader(Reader in, int mode) {
 		if (in == null) {
 			throw new NullPointerException("in == null");
 		}
 
 		this.in = in;
+		if (mode != MODE_JSON5 && mode != MODE_STRICT_JSON && mode != MODE_JSONC) {
+			throw new IllegalArgumentException("Unknown mode " + mode + "! How did we get here?");
+		}
+		this.mode = mode;
 	}
 
 	/**
 	 * Disables JSON5-specific features. This includes, but is not limited to: comments, lack of quotes around object keys,
 	 * trailing commas, hexadecimal numbers, and enhanced floating point numbers.
+	 * @deprecated Avoid changing the format being parsed after the reader has been constructed.
 	 */
+	@Deprecated
 	public JsonReader setStrictJson() {
-		this.strict = true;
+		this.mode = MODE_STRICT_JSON;
 		return this;
 	}
 
 	/**
 	 * Returns true if this Reader will parse JSON strictly. Defaults to false.
 	 */
+	@Deprecated
 	public boolean isStrictJson() {
-		return strict;
+		return this.mode == MODE_STRICT_JSON;
 	}
 
 	/**
@@ -1468,8 +1515,10 @@ public final class JsonReader implements Closeable {
 					}
 				}
 
-				// Comments are JSON5 only
-				assertJson5();
+				// Comments are not allowed in strict json
+				if (mode == MODE_STRICT_JSON) {
+					throw syntaxError("Found a comment, which is not allowed in strict json! Consider using JSONC or JSON5.");
+				}
 				char peek = buffer[pos];
 				switch (peek) {
 					case '*':
@@ -1505,13 +1554,13 @@ public final class JsonReader implements Closeable {
 	}
 
 	private void assertJson5() throws IOException {
-		if (strict) {
+		if (mode != MODE_JSON5) {
 			throw syntaxError("Found potentially valid JSON5, but invalid JSON while in strict mode");
 		}
 	}
 
 	private boolean isJson5(boolean bool) throws IOException {
-		if (bool && strict) {
+		if (bool && mode != MODE_JSON5) {
 			throw syntaxError("Found potentially valid JSON5, but invalid JSON while in strict mode");
 		}
 
