@@ -1,7 +1,7 @@
 # Quilt JSON5
 
-Quilt JSON5 is a compliant JSON5 and JSON reader and writer.
-The API design is inspired by the structure of GSON's stream api. The API surface should be similar to GSON, but may
+Quilt JSON5 is a compliant JSON, JSONC, and JSON5 reader and writer.
+The API design is inspired by the structure of GSON's stream api. The API surface should be similar to GSON's, but may
 differ slightly.
 
 This parser is suitable to be used to read and write JSON(5) files and further abstracted libraries which need a
