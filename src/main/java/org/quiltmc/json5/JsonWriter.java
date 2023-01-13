@@ -647,7 +647,25 @@ public final class JsonWriter implements Closeable, Flushable {
 	private void writeDeferredName() throws IOException {
 		if (deferredName != null) {
 			beforeName();
-			string(deferredName, strict || deferredName.contains(" "), true);
+			
+			boolean quotes = true;
+			if (!strict) {
+				// JSON5 allows bare names... only for keys that are valid EMCA5 identifiers
+				// luckily, Java uses the same logic, so we can just use the built-in Character.isJavaIdentifierStart/Part methods
+				if (deferredName.length() > 0) {
+					if (Character.isJavaIdentifierStart(deferredName.charAt(0)) {
+						quotes = false;
+						for (int i = 0; i < deferredName.length(); i++) {
+							if (!Character.isJavaIdentifierPart(deferredName.charAt(1)) {
+								quotes = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			string(deferredName, quotes, true);
 			deferredName = null;
 		}
 	}
