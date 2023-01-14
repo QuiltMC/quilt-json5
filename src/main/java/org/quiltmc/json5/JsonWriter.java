@@ -651,7 +651,8 @@ public final class JsonWriter implements Closeable, Flushable {
 			boolean quotes = true;
 			if (!strict) {
 				// JSON5 allows bare names... only for keys that are valid EMCA5 identifiers
-				// luckily, Java uses the same logic, so we can just use the built-in Character.isJavaIdentifierStart/Part methods
+				// luckily, Java identifiers follow the same standard,
+				//  so we can just use the built-in Character.isJavaIdentifierStart/Part methods
 				if (deferredName.length() > 0) {
 					if (Character.isJavaIdentifierStart(deferredName.charAt(0))) {
 						quotes = false;
