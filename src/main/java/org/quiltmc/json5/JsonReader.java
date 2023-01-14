@@ -1097,6 +1097,7 @@ public final class JsonReader implements Closeable {
 						continue;
 					}
 					if (last == NUMBER_CHAR_HEXADECIMAL || last == NUMBER_CHAR_FRACTION_DIGIT || last == NUMBER_CHAR_EXP_DIGIT) {
+						last = NUMBER_CHAR_DIGIT;
 						continue;
 					}
 					if (last == NUMBER_CHAR_EXP_E || last == NUMBER_CHAR_EXP_SIGN) {
