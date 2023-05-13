@@ -1,3 +1,7 @@
+# Quilt JSON5 is dead, long live QUP JSON!
+Quilt JSON5 has been replaced with [QUP](https://github.com/QuiltMC/qup), which is based off of Quilt JSON5.
+Quilt JSON5 will no longer be maintained. Use QUP JSON instead.
+
 # Quilt JSON5
 
 Quilt JSON5 is a compliant JSON5 and JSON reader and writer.

@@ -18,6 +18,7 @@ package org.quiltmc.json5.exception;
 
 import org.quiltmc.json5.JsonReader;
 
+@Deprecated
 public class FormatViolationException extends ParseException {
 	public FormatViolationException() {
 		super();

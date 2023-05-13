@@ -21,6 +21,7 @@ import org.quiltmc.json5.JsonReader;
 /**
  * A generic exception relating to an error in parsing, from loading the text to be read to emitting it's final representation.
  */
+@Deprecated
 public class ParseException extends RuntimeException {
 	public ParseException() {
 		super();

@@ -21,6 +21,7 @@ import org.quiltmc.json5.JsonReader;
 /**
  * An exception to be thrown by a parser when the syntax of a file is invalid.
  */
+@Deprecated
 public class MalformedSyntaxException extends ParseException {
 	public MalformedSyntaxException() {
 		super();

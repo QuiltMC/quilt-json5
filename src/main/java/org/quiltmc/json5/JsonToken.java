@@ -28,6 +28,7 @@ package org.quiltmc.json5;
  *
  * @author Jesse Wilson
  */
+@Deprecated
 public enum JsonToken {
 
 	/**

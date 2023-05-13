@@ -29,6 +29,7 @@ package org.quiltmc.json5;
  * @author Jesse Wilson
  * @since 1.6
  */
+@Deprecated
 final class JsonScope {
 
 	/**
